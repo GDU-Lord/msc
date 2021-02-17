@@ -1296,6 +1296,14 @@ window.addEventListener('load', (e) => {
         static initPlayer (player) {
             
             const tile = this.getTile(player.capital.x, player.capital.y);
+            new rjs.Text({
+                pos: tile.pos,
+                size: 50,
+                font: "Arial",
+                text: player.name,
+                color: rgb(0, 0, 0),
+                layer: tile.layer
+            });
             tile.filters[1] = rgb(255, 300, 255);
             let status = "neutral";
             if(player.name == USERNAME)
