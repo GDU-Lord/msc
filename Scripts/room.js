@@ -250,8 +250,7 @@ class Room {
         this.capitals[`${p.x}_${p.y}`] = player.name;
         player.setCapital(p.x, p.y);
 
-        player.addArmy(1000);
-        player.addArmy(1000);
+        player.addArmy(50000);
 
         this.emit("player", {
             name: player.name,
