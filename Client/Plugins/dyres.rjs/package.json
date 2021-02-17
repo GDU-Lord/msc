@@ -1,0 +1,17 @@
+{
+	"name": "dyres",
+	"version": "1.0.0",
+	"main": "plugin.js",
+	"settings": {
+		"dynamic": false,
+		"static": true,
+		"static_resoution": 0.8,
+		"min_FPS": 25,
+		"max_FPS": 40,
+		"period": 500,
+		"EPP": 10,
+		"k": 1.1,
+		"max_resolution_scale": 1,
+		"min_resolution_scale": 0.35
+	}
+}
