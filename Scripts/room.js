@@ -149,14 +149,18 @@ class Room {
         
     }
 
-    expand (player, x, y) {
+    expand (player, x, y, army = null) {
 
+        let rem = false;
         const tile = this.map.tiles[x][y];
         const status = this.map.getStatus(player, x, y);
         const owner = Player.list[tile.owner];
         if(status == "NEUTRAL" || status == "ENEMY") {
             tile.owner = player.name;
             this.emit("update-tile", tile);
+            if(army != null)
+                army.amount --;
+            rem = army.amount <= 0;
             if(`${tile.pos.x}_${tile.pos.y}` in this.capitals) {
                 delete this.capitals[`${tile.pos.x}_${tile.pos.y}`];
                 owner.defeat(player);
@@ -164,6 +168,8 @@ class Room {
         }
         if(status == "NEUTRAL" && typeof owner != "undefined")
             this.war(player, owner);
+
+        return rem;
 
     }
 

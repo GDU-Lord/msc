@@ -15,7 +15,7 @@ app.get("/", (req, res) => {
 });
 
 http.listen(9909, "31.131.22.158", () => {
-    console.log('Initialization completed! Server is running!');
+    console.log('Initialization completed! Server is running...');
 });
 
 const io = require("socket.io")(http);
@@ -187,6 +187,7 @@ io.on("connection", socket => {
         if(typeof socket.PLAYER != "undefined") {
             console.log(socket.PLAYER.name + " <- [X]");
             socket.PLAYER.left = true;
+            socket.PLAYER.dsRoom.remove();
             const room = Room.list[socket.PLAYER.room];
             if(typeof room != "undefined")
                 room.checkUsersLeft();

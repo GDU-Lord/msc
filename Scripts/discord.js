@@ -75,6 +75,24 @@ class Room {
         member.voice.setChannel(this.constructor.list.waiting.channel).then(() => this.updateList(member));
     }
 
+    remove () {
+        
+        const channel = this.channel;
+
+        channel.members.forEach(member => {
+
+            Discord.Room.list.waiting.connect(member);
+
+        });
+
+        setTimeout(() => {
+
+            channel.delete();
+
+        }, 1000);
+
+    }
+
 }
 
 class Discord {

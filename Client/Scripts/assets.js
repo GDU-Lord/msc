@@ -21,7 +21,10 @@
 		type: "Polygon",
 		color: rgb(255, 0, 0),
 		vertices: vert,
-		families: [F_TILES]
+		families: [F_TILES],
+		points: [
+			vec2(20, 0)
+		]
 	});
 
 	$UI_TEXT = new rjs.Asset({
@@ -52,10 +55,48 @@
 				if(this.params != null)
 					this.text.text = String(this.params._amount);
 			},
+			setPos (tile, moveOthers = true) {
+
+				const arms = [];
+				const arm = this;
+
+				F_ARMIES.for(army => {
+
+					if(rjs.Collision(tile, army)) {
+						if(army.id != arm.id && moveOthers)
+							army.setPos(tile, false);
+						arms[army.id] = army;
+					}
+
+				});
+
+				if(!(arm.id in arms))
+					arms[arm.id] = arm;
+
+				const cnt = count(arms);
+				log(arms);
+				log(cnt);
+				let c = 0;
+				for(let i in arms) {
+					log(i, c);
+					if(i == arm.id) {
+						log(arm.id);
+						if(c == 0 && cnt == 1)
+							arm.pos = copy(tile.pos);
+						else {
+							const a = c/cnt*360;
+							arm.pos = tile.getPoint(0, a);
+						}
+						break;
+					}
+					c++;
+				}
+
+			},
 			init () {
 				this.text = new rjs.Text({
 					pos: vec2(),
-					size: 30,
+					size: 15,
 					font: "Arial",
 					text: "[][][]",
 					layer: this.layer

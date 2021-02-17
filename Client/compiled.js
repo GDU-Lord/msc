@@ -1,5 +1,5 @@
 {
-let FS_PLUS,FS_SOUND,FS_X,FS_DOTS,VS_PLUS,H_PLUS,H_PLUS2,H_SOUND,H_X,H_DOTS,TILE,UI_TEXT,ARMY,QBUTTON,KICK,JOIN,LIST,GROUP_TEXT,GROUP_BG,NEW_GROUP,WINDOW,play_cam,play_bg,play_main,play_map,play_armies,play_ui,MAP,UI,DEFEATED,tiles,tx_invite,tx_voice_invite,tx_voice_kick,tx_kick,tx_username,tx_room,tx_pop,tx_army,tx_level,tx_coins,tx_groups,tx_voice_list,socket,USERNAME,ROOM,PASS,GAME_STARTED;
+let FS_PLUS,FS_SOUND,FS_X,FS_DOTS,VS_PLUS,H_PLUS,H_PLUS2,H_SOUND,H_X,H_DOTS,TILE,UI_TEXT,ARMY,QBUTTON,KICK,JOIN,LIST,GROUP_TEXT,GROUP_BG,NEW_GROUP,WINDOW,play_cam,play_bg,play_main,play_map,play_armies,play_ui,MAP,UI,DEFEATED,tiles,tx_invite,tx_voice_invite,tx_voice_kick,tx_kick,tx_username,tx_room,tx_pop,tx_army,tx_level,tx_coins,tx_turns,tx_groups,tx_voice_list,socket,USERNAME,ROOM,PASS,GAME_STARTED;
 
 // код запускается после загрузки страници
 
@@ -904,7 +904,10 @@ window.addEventListener('load', (e) => {
 		type: "Polygon",
 		color: rgb(255, 0, 0),
 		vertices: vert,
-		families: [F_TILES]
+		families: [F_TILES],
+		points: [
+			vec2(20, 0)
+		]
 	});
 
 	UI_TEXT = new rjs.Asset({
@@ -935,10 +938,48 @@ window.addEventListener('load', (e) => {
 				if(this.params != null)
 					this.text.text = String(this.params._amount);
 			},
+			setPos (tile, moveOthers = true) {
+
+				const arms = [];
+				const arm = this;
+
+				F_ARMIES.for(army => {
+
+					if(rjs.Collision(tile, army)) {
+						if(army.id != arm.id && moveOthers)
+							army.setPos(tile, false);
+						arms[army.id] = army;
+					}
+
+				});
+
+				if(!(arm.id in arms))
+					arms[arm.id] = arm;
+
+				const cnt = count(arms);
+				log(arms);
+				log(cnt);
+				let c = 0;
+				for(let i in arms) {
+					log(i, c);
+					if(i == arm.id) {
+						log(arm.id);
+						if(c == 0 && cnt == 1)
+							arm.pos = copy(tile.pos);
+						else {
+							const a = c/cnt*360;
+							arm.pos = tile.getPoint(0, a);
+						}
+						break;
+					}
+					c++;
+				}
+
+			},
 			init () {
 				this.text = new rjs.Text({
 					pos: vec2(),
-					size: 30,
+					size: 15,
 					font: "Arial",
 					text: "[][][]",
 					layer: this.layer
@@ -1153,6 +1194,30 @@ window.addEventListener('load', (e) => {
         static #_inviteVoice = false;
         static #_kickVoice = false;
         static #_kickGroup = null;
+        static #_turns = 0;
+        static interval = null;
+
+        static get turns () {
+            return this._turns;
+        }
+
+        static set turns (turns) {
+            this._turns = turns;
+            tx_turns.text = "Turns: "+turns;
+            if(turns <= 0) {
+                F_ARMIES.for(army => {
+                    if(army.params.player == USERNAME)
+                        army.opacity = 50;
+                        army.filters[10] = rgb(255, 200, 255);
+                });
+            }
+            else {
+                F_ARMIES.for(army => {
+                    army.opacity = 100;
+                    army.filters[10] = rgb(255, 255, 255);
+                });
+            }
+        }
 
         static get inviteGroup () {
             return this._inviteGroup;
@@ -1301,7 +1366,7 @@ window.addEventListener('load', (e) => {
                 size: 50,
                 font: "Arial",
                 text: player.name,
-                color: rgb(0, 0, 0),
+                color: rgba(0, 0, 0, 180),
                 layer: tile.layer
             });
             tile.filters[1] = rgb(255, 300, 255);
@@ -1309,6 +1374,8 @@ window.addEventListener('load', (e) => {
             if(player.name == USERNAME)
                 status = "self";
             // this.fillTiles(player.tiles, status);
+
+            this.startInterval();
 
         }
 
@@ -1339,6 +1406,8 @@ window.addEventListener('load', (e) => {
         }
 
         static initArmy (army, layer) {
+
+            console.log("fkn init");
 
             const obj = this.armies[army.id] = new ARMY({
                 pos: copy(this.getTile(army.pos.x, army.pos.y).pos),
@@ -1374,7 +1443,7 @@ window.addEventListener('load', (e) => {
         static updateArmy (army, a) {
 
             a.params = army;
-            a.pos = copy(this.getTile(army.pos.x, army.pos.y).pos);
+            a.setPos(this.getTile(army.pos.x, army.pos.y));
 
             const status = this.getArmyStatus(army);
             a.color = this.getStatusColor(status);
@@ -1512,6 +1581,22 @@ window.addEventListener('load', (e) => {
                 }
 
             }
+
+        }
+
+        static startInterval () {
+
+            if(this.interval != null) {
+                clearInterval(this.interval);
+                this.interval = null;
+            }
+
+            this.turns = 0;
+
+            this.interval = setInterval(() => {
+                if(GAME_STARTED)
+                    this.turns ++;
+            }, 5000);
 
         }
 
@@ -2153,8 +2238,14 @@ window.addEventListener('load', (e) => {
 	// 	layer: play_ui
 	// });
 
-	tx_groups = new UI_TEXT({
+	tx_turns = new UI_TEXT({
 		pos: vec2(-rjs.client.w/2+10, -rjs.client.h/2+10),
+		text: "Turns: 0",
+		layer: play_ui
+	});
+
+	tx_groups = new UI_TEXT({
+		pos: vec2(-rjs.client.w/2, -rjs.client.h/2+60),
 		text: "Groups:",
 		layer: play_ui
 	});
@@ -2280,22 +2371,28 @@ window.addEventListener('load', (e) => {
 		UI.click();
 
 		if(MAP.dragArmy == null) {
-			F_ARMIES.for(army => {
-				const a = army.params;
-				if(rjs.MouseOver(army) && a.player == USERNAME) {
-					MAP.dragArmy = army;
-				}
-			});
+			if(MAP.turns > 0) {
+				F_TILES.for(tile => {
+					if(!rjs.MouseOver(tile))
+						return;
+					F_ARMIES.for(army => {
+						if(army.params.player == USERNAME && rjs.Collision(army, tile)) {
+							MAP.dragArmy = army;
+							MAP.turns --;
+						}
+					});
+				});
+			}
 		}
 		else {
 
 			if(MAP.select == null) {
-				MAP.dragArmy.pos = copy(MAP.getTile(MAP.dragArmy.params.pos.x, MAP.dragArmy.params.pos.y).pos);
+				// MAP.dragArmy.pos = copy(MAP.getTile(MAP.dragArmy.params.pos.x, MAP.dragArmy.params.pos.y).pos);
 				MAP.dragArmy = null;
 			}
 			else {
 				if(!MAP.dragArmy.virtual) {
-					MAP.dragArmy.pos = copy(MAP.select.pos);
+					MAP.dragArmy.setPos(MAP.select);
 					MAP.dragArmy.params.pos = vec2(MAP.select.x, MAP.select.y);
 					socket.emit("army-move", {
 						id: MAP.dragArmy.params.id,
@@ -2322,22 +2419,28 @@ window.addEventListener('load', (e) => {
 			return;
 
 		if(MAP.dragArmy == null) {
-			F_ARMIES.for(army => {
-				const a = army.params;
-				if(rjs.MouseOver(army) && a.player == USERNAME && a._amount > 125) {
-					MAP.dragArmy = MAP.splitArmy(army);
-				}
-			});
+			if(MAP.turns > 0) {
+				F_TILES.for(tile => {
+					if(!rjs.MouseOver(tile))
+						return;
+					F_ARMIES.for(army => {
+						if(army.params.player == USERNAME && rjs.Collision(army, tile) && army.params._amount > 2) {
+							MAP.dragArmy = MAP.splitArmy(army);
+							MAP.turns --;
+						}
+					});
+				});
+			}
 		}
 		else {
 
 			if(MAP.select == null) {
-				MAP.dragArmy.pos = copy(MAP.getTile(MAP.dragArmy.params.pos.x, MAP.dragArmy.params.pos.y).pos);
+				// MAP.dragArmy.pos = copy(MAP.getTile(MAP.dragArmy.params.pos.x, MAP.dragArmy.params.pos.y).pos);
 				MAP.dragArmy = null;
 			}
 			else {
 				if(!MAP.dragArmy.virtual) {
-					MAP.dragArmy.pos = copy(MAP.select.pos);
+					MAP.dragArmy.setPos(MAP.select);
 					MAP.dragArmy.params.pos = vec2(MAP.select.x, MAP.select.y);
 					socket.emit("army-move", {
 						id: MAP.dragArmy.params.id,

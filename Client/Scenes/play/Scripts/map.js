@@ -12,6 +12,30 @@
         static #_inviteVoice = false;
         static #_kickVoice = false;
         static #_kickGroup = null;
+        static #_turns = 0;
+        static interval = null;
+
+        static get turns () {
+            return this._turns;
+        }
+
+        static set turns (turns) {
+            this._turns = turns;
+            tx_turns.text = "Turns: "+turns;
+            if(turns <= 0) {
+                F_ARMIES.for(army => {
+                    if(army.params.player == USERNAME)
+                        army.opacity = 50;
+                        army.filters[10] = rgb(255, 200, 255);
+                });
+            }
+            else {
+                F_ARMIES.for(army => {
+                    army.opacity = 100;
+                    army.filters[10] = rgb(255, 255, 255);
+                });
+            }
+        }
 
         static get inviteGroup () {
             return this._inviteGroup;
@@ -160,7 +184,7 @@
                 size: 50,
                 font: "Arial",
                 text: player.name,
-                color: rgb(0, 0, 0),
+                color: rgba(0, 0, 0, 180),
                 layer: tile.layer
             });
             tile.filters[1] = rgb(255, 300, 255);
@@ -168,6 +192,8 @@
             if(player.name == USERNAME)
                 status = "self";
             // this.fillTiles(player.tiles, status);
+
+            this.startInterval();
 
         }
 
@@ -198,6 +224,8 @@
         }
 
         static initArmy (army, layer) {
+
+            console.log("fkn init");
 
             const obj = this.armies[army.id] = new ARMY({
                 pos: copy(this.getTile(army.pos.x, army.pos.y).pos),
@@ -233,7 +261,7 @@
         static updateArmy (army, a) {
 
             a.params = army;
-            a.pos = copy(this.getTile(army.pos.x, army.pos.y).pos);
+            a.setPos(this.getTile(army.pos.x, army.pos.y));
 
             const status = this.getArmyStatus(army);
             a.color = this.getStatusColor(status);
@@ -371,6 +399,22 @@
                 }
 
             }
+
+        }
+
+        static startInterval () {
+
+            if(this.interval != null) {
+                clearInterval(this.interval);
+                this.interval = null;
+            }
+
+            this.turns = 0;
+
+            this.interval = setInterval(() => {
+                if(GAME_STARTED)
+                    this.turns ++;
+            }, 5000);
 
         }
 

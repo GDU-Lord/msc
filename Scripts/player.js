@@ -63,8 +63,9 @@ class Army {
         this.position = true;
         tile.armies[this.id] = this;
         player.armies[this.id] = this;
-        room.expand(player, x, y);
-        room.emit("army-update", this);
+        const removed = room.expand(player, x, y, this);
+        if(!removed)
+            room.emit("army-update", this);
         return this;
     }
 
@@ -130,7 +131,11 @@ class Army {
         this._amount = amount;
         const player = Player.list[this.player];
         const room = Room.list[player.room];
-        room.emit("army-update", this);
+        if(typeof room != "undefined") {
+            if(amount <= 0)
+                return this.delete();
+            room.emit("army-update", this);
+        }
     }
 
 }

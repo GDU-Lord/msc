@@ -1,5 +1,3 @@
-const Discord = require("./discord");
-
 class Group {
 
     players = {}; //jshint ignore:line

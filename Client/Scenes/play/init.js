@@ -101,8 +101,14 @@
 	// 	layer: play_ui
 	// });
 
-	$tx_groups = new UI_TEXT({
+	$tx_turns = new UI_TEXT({
 		pos: vec2(-rjs.client.w/2+10, -rjs.client.h/2+10),
+		text: "Turns: 0",
+		layer: play_ui
+	});
+
+	$tx_groups = new UI_TEXT({
+		pos: vec2(-rjs.client.w/2, -rjs.client.h/2+60),
 		text: "Groups:",
 		layer: play_ui
 	});
@@ -228,22 +234,28 @@
 		UI.click();
 
 		if(MAP.dragArmy == null) {
-			F_ARMIES.for(army => {
-				const a = army.params;
-				if(rjs.MouseOver(army) && a.player == USERNAME) {
-					MAP.dragArmy = army;
-				}
-			});
+			if(MAP.turns > 0) {
+				F_TILES.for(tile => {
+					if(!rjs.MouseOver(tile))
+						return;
+					F_ARMIES.for(army => {
+						if(army.params.player == USERNAME && rjs.Collision(army, tile)) {
+							MAP.dragArmy = army;
+							MAP.turns --;
+						}
+					});
+				});
+			}
 		}
 		else {
 
 			if(MAP.select == null) {
-				MAP.dragArmy.pos = copy(MAP.getTile(MAP.dragArmy.params.pos.x, MAP.dragArmy.params.pos.y).pos);
+				// MAP.dragArmy.pos = copy(MAP.getTile(MAP.dragArmy.params.pos.x, MAP.dragArmy.params.pos.y).pos);
 				MAP.dragArmy = null;
 			}
 			else {
 				if(!MAP.dragArmy.virtual) {
-					MAP.dragArmy.pos = copy(MAP.select.pos);
+					MAP.dragArmy.setPos(MAP.select);
 					MAP.dragArmy.params.pos = vec2(MAP.select.x, MAP.select.y);
 					socket.emit("army-move", {
 						id: MAP.dragArmy.params.id,
@@ -270,22 +282,28 @@
 			return;
 
 		if(MAP.dragArmy == null) {
-			F_ARMIES.for(army => {
-				const a = army.params;
-				if(rjs.MouseOver(army) && a.player == USERNAME && a._amount > 125) {
-					MAP.dragArmy = MAP.splitArmy(army);
-				}
-			});
+			if(MAP.turns > 0) {
+				F_TILES.for(tile => {
+					if(!rjs.MouseOver(tile))
+						return;
+					F_ARMIES.for(army => {
+						if(army.params.player == USERNAME && rjs.Collision(army, tile) && army.params._amount > 2) {
+							MAP.dragArmy = MAP.splitArmy(army);
+							MAP.turns --;
+						}
+					});
+				});
+			}
 		}
 		else {
 
 			if(MAP.select == null) {
-				MAP.dragArmy.pos = copy(MAP.getTile(MAP.dragArmy.params.pos.x, MAP.dragArmy.params.pos.y).pos);
+				// MAP.dragArmy.pos = copy(MAP.getTile(MAP.dragArmy.params.pos.x, MAP.dragArmy.params.pos.y).pos);
 				MAP.dragArmy = null;
 			}
 			else {
 				if(!MAP.dragArmy.virtual) {
-					MAP.dragArmy.pos = copy(MAP.select.pos);
+					MAP.dragArmy.setPos(MAP.select);
 					MAP.dragArmy.params.pos = vec2(MAP.select.x, MAP.select.y);
 					socket.emit("army-move", {
 						id: MAP.dragArmy.params.id,
