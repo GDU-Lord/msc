@@ -14,7 +14,7 @@ app.get("/", (req, res) => {
     res.sendFile(DIRNAME + "/Client/index.html");
 });
 
-http.listen(80, "localhost", () => {
+http.listen(9909, "31.131.22.158", () => {
     console.log('Initialization completed! Server running on "http://localhost"');
 });
 
