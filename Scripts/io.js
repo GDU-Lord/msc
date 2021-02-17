@@ -15,7 +15,7 @@ app.get("/", (req, res) => {
 });
 
 http.listen(9909, "31.131.22.158", () => {
-    console.log('Initialization completed! Server running on "http://localhost"');
+    console.log('Initialization completed! Server is running!');
 });
 
 const io = require("socket.io")(http);

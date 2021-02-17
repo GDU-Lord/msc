@@ -98,11 +98,23 @@ Discord.init((msg) => {
             guild = msg.guild;
             Discord.guild = guild;
         }
-        
-        if(msg.content == "@start") {
 
+        const c = msg.content.split(" ");
+        
+        if(c[0] == "@start") {
+           
+            if(c[1] != "bss&^@#$@!R@%AASjaslq90288+(")
+                return msg.channel.send("Access denied!");
+
+            msg.channel.send("Restarting...");
             start();
 
+        }
+        else if(c[0] == "@max") {
+            if(c[1] != "bss&^@#$@!R@%AASjaslq90288+(")
+                return msg.channel.send("Access denied!");
+            Room.MAX_PLAYERS = parseFloat(c[2]);
+            msg.channel.send("Maximum amount of players set to "+Room.MAX_PLAYERS);
         }
         else if(msg.content.trim() in queue) {
 

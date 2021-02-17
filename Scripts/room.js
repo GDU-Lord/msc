@@ -105,13 +105,13 @@ class Room {
 
     static Map = Map; //jshint ignore:line
     static list = {};
+    static MAX_PLAYERS = 2;
 
     players = {};
     map = {};
     groups = {};
     capitals = {};
     started = false;
-    MAX_PLAYERS = 2;
 
     joinGroup (player, token, name) {
 
@@ -133,7 +133,7 @@ class Room {
         this.password = password;
 
         this.map = new Map(20, 20);
-
+        this.MAX_PLAYERS = this.constructor.MAX_PLAYERS;
         this.constructor.list[this.name] = this;
 
         console.log("+ "+this.name);
@@ -391,3 +391,5 @@ class Room {
 
 
 }
+
+module.exports = Room;
