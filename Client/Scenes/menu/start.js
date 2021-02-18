@@ -4,8 +4,6 @@
 	// params -  набор параметров запуска сцены
 	
 	// переключение на камеру "new_cam"
-	play_cam.set();
-
-	SOCKET_SCRIPT();
+	menu_cam.set();
 
 }

@@ -28,6 +28,7 @@ window.addEventListener('load', (e) => {
 
 	// создание сцены "new"
 	play_scene = new Smart.Scene("play");
+	menu_scene = new Smart.Scene("menu");
 
 	// переход на сцену "new"
 	play_scene.set();

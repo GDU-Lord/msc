@@ -1,9 +1,11 @@
 () => {
 
+    // group interface class
     class Group {
 
         static list = {}; // jshint ignore:line
 
+        // removing all the group interfaces
         static removeAll () {
 
             for(let i in this.list) {
@@ -31,6 +33,8 @@
             const offset = (m*2+100)*c+50;
             const s = 50;
 
+            // generating background and buttons for the group management
+
             this.bg = new GROUP_BG({
                 pos: vec2(rjs.client.w/2, rjs.client.h/2-offset),
                 layer: UI.layer,
@@ -38,6 +42,8 @@
                     group: this
                 }
             });
+
+            // generate buttons
             
             this.invite = new QBUTTON({
                 pos: vec2(rjs.client.w/2-(s+m)*5+s/2, rjs.client.h/2-25-m-offset),
@@ -48,6 +54,7 @@
                     onclick () {
                         if(!GAME_STARTED)
                             return;
+                        // invite player to the group
                         MAP.inviteGroup = this.group;
                     }
                 }
@@ -62,6 +69,7 @@
                     onclick () {
                         if(!GAME_STARTED)
                             return;
+                        // kick the player from the group
                         const group = MAP.groups[this.group.token];
                         if(group.owner == USERNAME)
                             MAP.kickGroup = this.group;
@@ -78,6 +86,7 @@
                     onclick () {
                         if(!GAME_STARTED)
                             return;
+                        // join voice channel of the group
                         socket.emit("ds-join", this.group.token);
                     }
                 }
@@ -92,12 +101,14 @@
                     onclick () {
                         if(!GAME_STARTED)
                             return;
+                        // get list of the players
                         const list = MAP.groups[this.group.token].list;
                         let text = "";
                         for(let i in list) {
                             if(list[i] != null)
                                 text += list[i]+"\n";
                         }
+                        // call a pop-up window
                         UI.alert(text);
                     }
                 }
@@ -112,6 +123,7 @@
                     onclick () {
                         if(!GAME_STARTED)
                             return;
+                        // leave the group
                         const group = this.group.name;
                         if(group == null || group == "")
                             return;
@@ -121,6 +133,8 @@
                     }
                 }
             });
+
+            // group name
 
             this.text = new GROUP_TEXT({
                 pos: vec2(rjs.client.w/2-50*2-75*2-25*2-m*3, rjs.client.h/2-70-m-offset),
@@ -140,15 +154,20 @@
 
     }
 
+    // UI class
+
     class UI {
 
         #_id = 0;// jshint ignore:line
 
-        static Group = Group;
-        static layer = 0;
-        static _alert = null;
+        // global properties
+        static Group = Group; // reference to Group class
+        static layer = 0; // layer of the UI
+        static _alert = null; // current alert window
 
         static click () {
+
+            // click event listener for UI
 
             if(MAP.inviteGroup != null) {
 
@@ -156,6 +175,7 @@
 
                     if(rjs.MouseOver(tile)) {
 
+                        // invite player to the group
                         const t = MAP.map.tiles[tile.x][tile.y];
 
                         const status = MAP.getStatus(tile.x, tile.y);
@@ -180,6 +200,8 @@
 
                     if(rjs.MouseOver(tile)) {
 
+                        // invite player to the voice channel
+
                         const t = MAP.map.tiles[tile.x][tile.y];
 
                         const status = MAP.getStatus(tile.x, tile.y);
@@ -200,6 +222,8 @@
                 F_TILES.for(tile => {
 
                     if(rjs.MouseOver(tile)) {
+
+                        // kick the player from the voice
 
                         const t = MAP.map.tiles[tile.x][tile.y];
 
@@ -222,6 +246,8 @@
 
                     if(rjs.MouseOver(tile)) {
 
+                        // kick the player from the group
+
                         const t = MAP.map.tiles[tile.x][tile.y];
 
                         const status = MAP.getStatus(tile.x, tile.y);
@@ -243,7 +269,7 @@
                     return;
 
                 F_BUTTONS.for(button => {
-                    
+                    // call click event of selected button
                     if(rjs.MouseOver(button)) {
                         button.onclick();
                     }
@@ -258,6 +284,7 @@
 
         static init (layer) {
             this.layer = layer;
+            // "new group" button
             this.new_group = new NEW_GROUP({
                 pos: vec2(rjs.client.w/2, rjs.client.h/2),
                 layer: this.layer,
@@ -265,6 +292,7 @@
                     onclick () {
                         if(!GAME_STARTED)
                             return;
+                        // pop-up window appears
                         UI.alert("Create a group\nEnter the group name:", {
                             no () {
 
@@ -279,6 +307,7 @@
                     }
                 }
             });
+            // invite to voice button
             this.invite = new QBUTTON({
                 pos: vec2(-rjs.client.w/2+60, rjs.client.h/2-60),
                 size: vec2(100, 100),
@@ -286,12 +315,14 @@
                 program: H_PLUS,
                 private: {
                     onclick () {
+                        // invite player to the voice
                         if(!GAME_STARTED)
                             return;
                         MAP.inviteVoice = true;
                     }
                 }
             });
+            // kick player from the voice channel (button)
             this.kick = new QBUTTON({
                 pos: vec2(-rjs.client.w/2+170, rjs.client.h/2-60),
                 size: vec2(100, 100),
@@ -299,12 +330,14 @@
                 program: H_X,
                 private: {
                     onclick () {
+                        // kick player from voice chat
                         if(!GAME_STARTED)
                             return;
                         MAP.kickVoice = true;
                     }
                 }
             });
+            // leave private voice
             this.leave = new QBUTTON({
                 pos: vec2(-rjs.client.w/2+280, rjs.client.h/2-60),
                 size: vec2(100, 100),
@@ -318,6 +351,7 @@
                     }
                 }
             });
+            // join common voice
             this.common = new QBUTTON({
                 pos: vec2(-rjs.client.w/2+390, rjs.client.h/2-60),
                 size: vec2(100, 100),
@@ -333,14 +367,17 @@
             });
         }
 
-        static alert (text, options = {ok () {}}, input = false) {
+        // call the pop-up window
+
+        static alert (text, options = {ok () {}}, input = false, layer = this.layer) {
 
             if(this._alert != null)
                 this._alert.close();
 
             this._alert = new WINDOW({
-                layer: this.layer,
+                layer: layer,
                 private: {
+                    // parameters of window
                     options: options,
                     input: input,
                     text: text
@@ -351,6 +388,7 @@
         
     }
 
+    // UI class interface
     return UI;
 
 }

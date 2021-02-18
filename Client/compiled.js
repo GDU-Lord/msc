@@ -1,5 +1,5 @@
 {
-let FS_PLUS,FS_SOUND,FS_X,FS_DOTS,VS_PLUS,H_PLUS,H_PLUS2,H_SOUND,H_X,H_DOTS,TILE,UI_TEXT,ARMY,QBUTTON,KICK,JOIN,LIST,GROUP_TEXT,GROUP_BG,NEW_GROUP,WINDOW,play_cam,play_bg,play_main,play_map,play_armies,play_ui,MAP,UI,DEFEATED,tiles,tx_invite,tx_voice_invite,tx_voice_kick,tx_kick,tx_username,tx_room,tx_pop,tx_army,tx_level,tx_coins,tx_turns,tx_groups,tx_voice_list,socket,USERNAME,ROOM,PASS,GAME_STARTED;
+let FS_PLUS,FS_SOUND,FS_X,FS_DOTS,VS_PLUS,H_PLUS,H_PLUS2,H_SOUND,H_X,H_DOTS,TILE,UI_TEXT,ARMY,QBUTTON,KICK,JOIN,LIST,GROUP_TEXT,GROUP_BG,NEW_GROUP,WINDOW,play_cam,play_bg,play_main,play_map,play_armies,play_ui,MAP,UI,SOCKET_SCRIPT,DEFEATED,tiles,tx_invite,tx_voice_invite,tx_voice_kick,tx_kick,tx_username,tx_room,tx_pop,tx_army,tx_level,tx_coins,tx_turns,tx_groups,tx_voice_list,socket,USERNAME,ROOM,PASS,GAME_STARTED,menu_cam,menu_bg,menu_buttons,menu_text;
 
 // код запускается после загрузки страници
 
@@ -819,28 +819,24 @@ window.addEventListener('load', (e) => {
 	// подключение скриптов
 	(() => {
 
-	// скрипт выполняется после инициализации движка
-	// используется для настроек проекта и движка
-
-	// подключение мыши и тачскрина
+	// initialization of mouse and touch
 	Mouse = new rjs.Mouse();
 	Touch = new rjs.Touch();
 
 })();
 	(() => {
 	
-	// скрипт выполняется после инициализации движка
-	// скрипт для создание семей объектов
-
+	// family for tiles
 	F_TILES = new rjs.Family();
+	// family for all the armies 
 	F_ARMIES = new rjs.Family();
+	// family for buttons (every clickable thing)
 	F_BUTTONS = new rjs.Family();
 
 })();
 	(() => {
 	
-	// скрипт выполняется после инициализации движка
-	// испольуется для загрузки ресурсов
+	// loading the shaders for button textures
 
 	FS_PLUS = new rjs.Shader("FRAGMENT", "Sources/glsl/fragment-plus.glsl", "PLUS");
 	FS_SOUND = new rjs.Shader("FRAGMENT", "Sources/glsl/fragment-sound.glsl", "SOUND");
@@ -883,8 +879,7 @@ window.addEventListener('load', (e) => {
 })();
 	(() => {
 	
-	// скрипт выполняется после инициализации движка
-	// используется для создания ассетов объектов
+	// setting up vertices for the hexagons
 
 	let size = 100;
 		
@@ -900,6 +895,8 @@ window.addEventListener('load', (e) => {
 		vec2(w*0/4-w/2, h/2-h/2)
 	];
 
+	// tile of the map
+
 	TILE = new rjs.Asset({
 		type: "Polygon",
 		color: rgb(255, 0, 0),
@@ -910,6 +907,7 @@ window.addEventListener('load', (e) => {
 		]
 	});
 
+	// simple text for ui
 	UI_TEXT = new rjs.Asset({
 		type: "Text",
 		font: "Arial",
@@ -919,6 +917,7 @@ window.addEventListener('load', (e) => {
 		color: rgb(0, 0, 0)
 	});
 
+	// army asset
 	ARMY = new rjs.Asset({
 		type: "Sprite",
 		size: vec2(30, 30/Math.sqrt(2)),
@@ -929,20 +928,23 @@ window.addEventListener('load', (e) => {
 			text: null,
 			virtual: false,
 			remove () {
+				// destroys the army
 				this.text.destroy();
 				this.destroy();
 			},
 			loop () {
+				// update the position of the text attached to army
 				this.text.pos.x = this.pos.x;
 				this.text.pos.y = this.pos.y-10;
 				if(this.params != null)
 					this.text.text = String(this.params._amount);
 			},
 			setPos (tile, moveOthers = true) {
-
+				// set army position on tile
 				const arms = [];
 				const arm = this;
 
+				// check all armies on the tile
 				F_ARMIES.for(army => {
 
 					if(rjs.Collision(tile, army)) {
@@ -956,17 +958,17 @@ window.addEventListener('load', (e) => {
 				if(!(arm.id in arms))
 					arms[arm.id] = arm;
 
+				// counting up the armies on tile
 				const cnt = count(arms);
-				log(arms);
-				log(cnt);
+				
 				let c = 0;
 				for(let i in arms) {
-					log(i, c);
 					if(i == arm.id) {
-						log(arm.id);
+						// put the army on the center of tile
 						if(c == 0 && cnt == 1)
 							arm.pos = copy(tile.pos);
 						else {
+							// put the army on a side of tile
 							const a = c/cnt*360;
 							arm.pos = tile.getPoint(0, a);
 						}
@@ -977,6 +979,7 @@ window.addEventListener('load', (e) => {
 
 			},
 			init () {
+				// army amount indicator initialization
 				this.text = new rjs.Text({
 					pos: vec2(),
 					size: 15,
@@ -988,45 +991,63 @@ window.addEventListener('load', (e) => {
 		}
 	});
 
+	// button asset
 	QBUTTON = new rjs.Asset({
 		type: "Sprite",
 		size: vec2(50, 50),
 		color: rgb(100, 100, 100),
 		families: [F_BUTTONS],
 		private: {
-			onclick () {}
+			text: null,
+			text_color: rgb(0, 0, 0),
+			onclick () {},
+			init () {
+				if(this.text == null)
+					return;
+				this.txt = new rjs.Text({
+					pos: this.pos,
+					size: this.size.y*0.8,
+					color: this.text_color,
+					font: "Arial",
+					text: this.text,
+					layer: this.layer
+				});
+
+			}
 		}
 	});
 
-	KICK = new rjs.Asset({
-		type: "Sprite",
-		size: vec2(50, 50),
-		color: rgb(100, 100, 100),
-		families: [F_BUTTONS],
-		private: {
-			onclick () {}
-		}
-	});
+	// KICK = new rjs.Asset({
+	// 	type: "Sprite",
+	// 	size: vec2(50, 50),
+	// 	color: rgb(100, 100, 100),
+	// 	families: [F_BUTTONS],
+	// 	private: {
+	// 		onclick () {}
+	// 	}
+	// });
 
-	JOIN = new rjs.Asset({
-		type: "Sprite",
-		size: vec2(150, 50),
-		color: rgb(100, 100, 100),
-		families: [F_BUTTONS],
-		private: {
-			onclick () {}
-		}
-	});
+	// JOIN = new rjs.Asset({
+	// 	type: "Sprite",
+	// 	size: vec2(150, 50),
+	// 	color: rgb(100, 100, 100),
+	// 	families: [F_BUTTONS],
+	// 	private: {
+	// 		onclick () {}
+	// 	}
+	// });
 
-	LIST = new rjs.Asset({
-		type: "Sprite",
-		size: vec2(100, 50),
-		color: rgb(100, 100, 100),
-		families: [F_BUTTONS],
-		private: {
-			onclick () {}
-		}
-	});
+	// LIST = new rjs.Asset({
+	// 	type: "Sprite",
+	// 	size: vec2(100, 50),
+	// 	color: rgb(100, 100, 100),
+	// 	families: [F_BUTTONS],
+	// 	private: {
+	// 		onclick () {}
+	// 	}
+	// });
+
+	// group manage panel elements
 
 	GROUP_TEXT = new rjs.Asset({
 		type: "Text",
@@ -1056,6 +1077,8 @@ window.addEventListener('load', (e) => {
 		}
 	});
 
+	// alert window asset
+
 	WINDOW = new rjs.Asset({
 		type: "Sprite",
 		size: vec2(400, 300),
@@ -1066,14 +1089,15 @@ window.addEventListener('load', (e) => {
 			vec2(0, 30),
 			vec2(-100, 100),
 			vec2(0, 100),
-			vec2(100, 100)
+			vec2(100, 100) // points for buttons, input fields and the text
 		],
 		private: {
 			text: "WARNING!",
-			options: {},
+			options: {}, // takes the available options (like ok/no/...)
 			buttons: {},
 			input: false,
 			close () {
+				// closing the window
 				this.destroy();
 				this.txt.destroy();
 				for(let i in this.buttons) {
@@ -1087,20 +1111,22 @@ window.addEventListener('load', (e) => {
 				return null;
 			},
 			init () {
-
+				// getting the width of the text object
 				const lines = this.text.split("\n");
 				let max = 0;
 
 				for(let i in lines) {
 					max = Math.max(lines[i].length, max);
 				}
-
+				
+				// increase the size of window if necessary
 				this.size.x = Math.max(max*25, this.size.x);
 
 				rjs.timeStep = 0;
 
 				const options = this.options;
 
+				// text initialization
 				this.txt = new rjs.Text({
 					pos: this.getPoint(0),
 					size: 40,
@@ -1110,6 +1136,7 @@ window.addEventListener('load', (e) => {
 					text: this.text
 				});
 
+				// options initialization
 				const c = count(options);
 				let index = 0;
 
@@ -1117,6 +1144,7 @@ window.addEventListener('load', (e) => {
 
 					const point = c == 1 ? 3 : index*2+2;
 
+					// creating the button
 					const button = new rjs.Sprite({
 						pos: this.getPoint(point),
 						layer: this.layer,
@@ -1127,10 +1155,12 @@ window.addEventListener('load', (e) => {
 							text: i,
 							parrent: this,
 							onclick () { //jshint ignore:line
+								// close the window and execute the option callback
 								this.parrent.close();
 								options[i](this.parrent);
 							},
 							init () { //jshint ignore:line
+								// button text initialization
 								this.txt = new rjs.Text({
 									pos: this.pos,
 									size: 50,
@@ -1150,6 +1180,7 @@ window.addEventListener('load', (e) => {
 				}
 
 				if(this.input) {
+					// creating the input field
 					this.input = new Input.Input({
 						pos: this.getPoint(1),
 						layer: this.layer,
@@ -1167,23 +1198,24 @@ window.addEventListener('load', (e) => {
 	// создание сцены "new"
 	play_scene = new rjs.Scene({
                 init: ((scene) => {
-
-	// скрипт запускается после инициализации сцены
 	
-	// создание камеры
+	// camera initialization
 	play_cam = new rjs.Camera({});
 
-	// создание слоёв
+	// layers
 	play_bg = new rjs.Layer(scene);
 	play_main = new rjs.Layer(scene);
 	play_map = new rjs.Layer(scene);
 	play_armies = new rjs.Layer(scene);
 	play_ui = new rjs.Layer(scene, vec2(0, 0));
 
+	// scene scripts
 	MAP = (() => {
 
+    // class initialization
     class MAP {
 
+        // properties containing information about match
         static armies = {};//jshint ignore:line
         static dragArmy = null;//jshint ignore:line
         static select = null;
@@ -1197,6 +1229,7 @@ window.addEventListener('load', (e) => {
         static #_turns = 0;
         static interval = null;
 
+        // updating turn counter
         static get turns () {
             return this._turns;
         }
@@ -1204,6 +1237,7 @@ window.addEventListener('load', (e) => {
         static set turns (turns) {
             this._turns = turns;
             tx_turns.text = "Turns: "+turns;
+            // change color of inactive armies
             if(turns <= 0) {
                 F_ARMIES.for(army => {
                     if(army.params.player == USERNAME)
@@ -1219,6 +1253,7 @@ window.addEventListener('load', (e) => {
             }
         }
 
+        // inviting player to the group
         static get inviteGroup () {
             return this._inviteGroup;
         }
@@ -1231,6 +1266,7 @@ window.addEventListener('load', (e) => {
                 tx_invite.render = true;
         }
 
+        // inviting player to the voice chat
         static get inviteVoice () {
             return this._inviteVoice;
         }
@@ -1240,6 +1276,7 @@ window.addEventListener('load', (e) => {
             tx_voice_invite.render = inv;
         }
 
+        // kcik player from the voice chat
         static get kickVoice () {
             return this._kickVoice;
         }
@@ -1249,6 +1286,7 @@ window.addEventListener('load', (e) => {
             tx_voice_kick.render = kick;
         }
 
+        // kcik player from the group
         static get kickGroup () {
             return this._kickGroup;
         }
@@ -1261,6 +1299,7 @@ window.addEventListener('load', (e) => {
                 tx_kick.render = true;
         }
 
+        // laoding the map
         static load (scene, tiles, map) {
 
             const sz = 50;
@@ -1275,6 +1314,7 @@ window.addEventListener('load', (e) => {
             this.tiles = tiles;
             this.map = map;
 
+            // generating hexagonal map
             for(let i in mt) {
                 tiles[i] = {};
                 for(let j in mt[i]) {
@@ -1300,6 +1340,7 @@ window.addEventListener('load', (e) => {
 
         }
 
+        // return tile by position in array
         static getTile (x, y) {
             let res = null;
             F_TILES.for(tile => {
@@ -1309,6 +1350,7 @@ window.addEventListener('load', (e) => {
             return res;
         }
 
+        // drag and zoom plugin initialization
         static initDrag (scene, layer1, ...layers) {
             Drag.Init(scene, layer1, rjs.MouseUp, rjs.MouseDown);
             Drag.InitZoom(scene, [layer1, ...layers], 1.1, rjs.WheelUp, rjs.WheelDown, (layer, val) => {
@@ -1316,6 +1358,7 @@ window.addEventListener('load', (e) => {
             });
         }
 
+        // checks is the tile belong to player
         static tileBelong (tile) {
             const status = this.getStatus(tile.x, tile.y);
             return (
@@ -1324,16 +1367,20 @@ window.addEventListener('load', (e) => {
             );
         }
 
+        // game loop of the match
         static loop () {
 
+            // drag and zoom loop
             Drag.loop();
 
             this.select = null;
 
+            // moving the army along the mouse
             if(this.dragArmy != null) {
                 const m = Mouse.get(this.dragArmy.layer);
                 this.dragArmy.pos.x = m.x;
                 this.dragArmy.pos.y = m.y;
+                // selecting the current tile
                 F_TILES.forNearTo(Mouse, tile => {
                     if(rjs.MouseOver(tile)) {
                         let b = false;
@@ -1351,16 +1398,19 @@ window.addEventListener('load', (e) => {
                     }
                 }, 100);
             }
-
+            // running loop of every army
             F_ARMIES.for(army => {
                 army.loop();
             });
 
         }
 
+        // player initialization
         static initPlayer (player) {
             
+            // setting a capital
             const tile = this.getTile(player.capital.x, player.capital.y);
+            // creating player nickname on the map
             new rjs.Text({
                 pos: tile.pos,
                 size: 50,
@@ -1370,15 +1420,12 @@ window.addEventListener('load', (e) => {
                 layer: tile.layer
             });
             tile.filters[1] = rgb(255, 300, 255);
-            let status = "neutral";
-            if(player.name == USERNAME)
-                status = "self";
-            // this.fillTiles(player.tiles, status);
-
+            // start turn update loop
             this.startInterval();
 
         }
 
+        // fill tile with color according to the status
         static fillTiles (tiles, status) {
 
             for(let i in tiles) {
@@ -1391,8 +1438,10 @@ window.addEventListener('load', (e) => {
 
         }
 
+        // update tile (from socket)
         static updateTile (tile) {
 
+            // getting status of tile and setting up its color
             this.map.tiles[tile.pos.x][tile.pos.y] = tile;
 
             const obj = this.getTile(tile.pos.x, tile.pos.y);
@@ -1405,10 +1454,10 @@ window.addEventListener('load', (e) => {
 
         }
 
+        // create an army (from socket)
         static initArmy (army, layer) {
 
-            console.log("fkn init");
-
+            // create a game object
             const obj = this.armies[army.id] = new ARMY({
                 pos: copy(this.getTile(army.pos.x, army.pos.y).pos),
                 layer: layer,
@@ -1417,11 +1466,13 @@ window.addEventListener('load', (e) => {
                 }
             });
 
+            // paint army with color
             const status = this.getArmyStatus(army);
             obj.color = this.getStatusColor(status);
 
         }
 
+        // split army by 2
         static splitArmy (army) {
 
             const a = new ARMY({
@@ -1440,6 +1491,7 @@ window.addEventListener('load', (e) => {
 
         }
 
+        // update an army (from socket)
         static updateArmy (army, a) {
 
             a.params = army;
@@ -1450,6 +1502,7 @@ window.addEventListener('load', (e) => {
 
         }
 
+        // delete the army
         static deleteArmy (a) {
 
             a.remove();
@@ -1457,6 +1510,7 @@ window.addEventListener('load', (e) => {
 
         }
 
+        // get the army by its id
         static findArmy (army) {
 
             if(army.id in this.armies)
@@ -1466,6 +1520,7 @@ window.addEventListener('load', (e) => {
 
         }
 
+        // add the group (from socket)
         static addGroup (name, list, enemies, owner, token) {
 
             this.groups[token] = {
@@ -1480,6 +1535,7 @@ window.addEventListener('load', (e) => {
 
         }
 
+        // removing the group from list (only for client) by its token
         static removeGroup (token) {
 
             if(token in this.groups)
@@ -1489,6 +1545,7 @@ window.addEventListener('load', (e) => {
 
         }
 
+        // get group token by its name
         static getToken (groupName) {
 
             for(let i in this.groups) {
@@ -1500,6 +1557,7 @@ window.addEventListener('load', (e) => {
 
         }
 
+        // update list of groups and controll buttons
         static updateGroupList () {
 
             UI.Group.removeAll();
@@ -1515,6 +1573,7 @@ window.addEventListener('load', (e) => {
 
         }
 
+        // returns the status of a tile with coordinates x y
         static getStatus (x, y) {
             const tile = this.map.tiles[x][y];
             if(tile.owner == "")
@@ -1528,6 +1587,7 @@ window.addEventListener('load', (e) => {
             return "NEUTRAL";
         }
 
+        // returns the status of given army
         static getArmyStatus (army) {
             if(army.player == USERNAME)
                 return "OWN";
@@ -1538,6 +1598,7 @@ window.addEventListener('load', (e) => {
             return "NEUTRAL";
         }
 
+        // returns the color according to a given status
         static getStatusColor (status) {
 
             let res = null;
@@ -1565,6 +1626,7 @@ window.addEventListener('load', (e) => {
 
         }
 
+        // update colors of the tiles on battlemap according to its status
         static updateGroups (friends, enemies) {
 
             this.friends = friends;
@@ -1584,6 +1646,7 @@ window.addEventListener('load', (e) => {
 
         }
 
+        // start the turn loop
         static startInterval () {
 
             if(this.interval != null) {
@@ -1606,15 +1669,18 @@ window.addEventListener('load', (e) => {
 
     }
 
+    // script returns MAP
     return MAP;
 
 })();
 	UI = (() => {
 
+    // group interface class
     class Group {
 
         static list = {}; // jshint ignore:line
 
+        // removing all the group interfaces
         static removeAll () {
 
             for(let i in this.list) {
@@ -1642,6 +1708,8 @@ window.addEventListener('load', (e) => {
             const offset = (m*2+100)*c+50;
             const s = 50;
 
+            // generating background and buttons for the group management
+
             this.bg = new GROUP_BG({
                 pos: vec2(rjs.client.w/2, rjs.client.h/2-offset),
                 layer: UI.layer,
@@ -1649,6 +1717,8 @@ window.addEventListener('load', (e) => {
                     group: this
                 }
             });
+
+            // generate buttons
             
             this.invite = new QBUTTON({
                 pos: vec2(rjs.client.w/2-(s+m)*5+s/2, rjs.client.h/2-25-m-offset),
@@ -1659,6 +1729,7 @@ window.addEventListener('load', (e) => {
                     onclick () {
                         if(!GAME_STARTED)
                             return;
+                        // invite player to the group
                         MAP.inviteGroup = this.group;
                     }
                 }
@@ -1673,6 +1744,7 @@ window.addEventListener('load', (e) => {
                     onclick () {
                         if(!GAME_STARTED)
                             return;
+                        // kick the player from the group
                         const group = MAP.groups[this.group.token];
                         if(group.owner == USERNAME)
                             MAP.kickGroup = this.group;
@@ -1689,6 +1761,7 @@ window.addEventListener('load', (e) => {
                     onclick () {
                         if(!GAME_STARTED)
                             return;
+                        // join voice channel of the group
                         socket.emit("ds-join", this.group.token);
                     }
                 }
@@ -1703,12 +1776,14 @@ window.addEventListener('load', (e) => {
                     onclick () {
                         if(!GAME_STARTED)
                             return;
+                        // get list of the players
                         const list = MAP.groups[this.group.token].list;
                         let text = "";
                         for(let i in list) {
                             if(list[i] != null)
                                 text += list[i]+"\n";
                         }
+                        // call a pop-up window
                         UI.alert(text);
                     }
                 }
@@ -1723,6 +1798,7 @@ window.addEventListener('load', (e) => {
                     onclick () {
                         if(!GAME_STARTED)
                             return;
+                        // leave the group
                         const group = this.group.name;
                         if(group == null || group == "")
                             return;
@@ -1732,6 +1808,8 @@ window.addEventListener('load', (e) => {
                     }
                 }
             });
+
+            // group name
 
             this.text = new GROUP_TEXT({
                 pos: vec2(rjs.client.w/2-50*2-75*2-25*2-m*3, rjs.client.h/2-70-m-offset),
@@ -1751,15 +1829,20 @@ window.addEventListener('load', (e) => {
 
     }
 
+    // UI class
+
     class UI {
 
         #_id = 0;// jshint ignore:line
 
-        static Group = Group;
-        static layer = 0;
-        static _alert = null;
+        // global properties
+        static Group = Group; // reference to Group class
+        static layer = 0; // layer of the UI
+        static _alert = null; // current alert window
 
         static click () {
+
+            // click event listener for UI
 
             if(MAP.inviteGroup != null) {
 
@@ -1767,6 +1850,7 @@ window.addEventListener('load', (e) => {
 
                     if(rjs.MouseOver(tile)) {
 
+                        // invite player to the group
                         const t = MAP.map.tiles[tile.x][tile.y];
 
                         const status = MAP.getStatus(tile.x, tile.y);
@@ -1791,6 +1875,8 @@ window.addEventListener('load', (e) => {
 
                     if(rjs.MouseOver(tile)) {
 
+                        // invite player to the voice channel
+
                         const t = MAP.map.tiles[tile.x][tile.y];
 
                         const status = MAP.getStatus(tile.x, tile.y);
@@ -1811,6 +1897,8 @@ window.addEventListener('load', (e) => {
                 F_TILES.for(tile => {
 
                     if(rjs.MouseOver(tile)) {
+
+                        // kick the player from the voice
 
                         const t = MAP.map.tiles[tile.x][tile.y];
 
@@ -1833,6 +1921,8 @@ window.addEventListener('load', (e) => {
 
                     if(rjs.MouseOver(tile)) {
 
+                        // kick the player from the group
+
                         const t = MAP.map.tiles[tile.x][tile.y];
 
                         const status = MAP.getStatus(tile.x, tile.y);
@@ -1854,7 +1944,7 @@ window.addEventListener('load', (e) => {
                     return;
 
                 F_BUTTONS.for(button => {
-                    
+                    // call click event of selected button
                     if(rjs.MouseOver(button)) {
                         button.onclick();
                     }
@@ -1869,6 +1959,7 @@ window.addEventListener('load', (e) => {
 
         static init (layer) {
             this.layer = layer;
+            // "new group" button
             this.new_group = new NEW_GROUP({
                 pos: vec2(rjs.client.w/2, rjs.client.h/2),
                 layer: this.layer,
@@ -1876,6 +1967,7 @@ window.addEventListener('load', (e) => {
                     onclick () {
                         if(!GAME_STARTED)
                             return;
+                        // pop-up window appears
                         UI.alert("Create a group\nEnter the group name:", {
                             no () {
 
@@ -1890,6 +1982,7 @@ window.addEventListener('load', (e) => {
                     }
                 }
             });
+            // invite to voice button
             this.invite = new QBUTTON({
                 pos: vec2(-rjs.client.w/2+60, rjs.client.h/2-60),
                 size: vec2(100, 100),
@@ -1897,12 +1990,14 @@ window.addEventListener('load', (e) => {
                 program: H_PLUS,
                 private: {
                     onclick () {
+                        // invite player to the voice
                         if(!GAME_STARTED)
                             return;
                         MAP.inviteVoice = true;
                     }
                 }
             });
+            // kick player from the voice channel (button)
             this.kick = new QBUTTON({
                 pos: vec2(-rjs.client.w/2+170, rjs.client.h/2-60),
                 size: vec2(100, 100),
@@ -1910,12 +2005,14 @@ window.addEventListener('load', (e) => {
                 program: H_X,
                 private: {
                     onclick () {
+                        // kick player from voice chat
                         if(!GAME_STARTED)
                             return;
                         MAP.kickVoice = true;
                     }
                 }
             });
+            // leave private voice
             this.leave = new QBUTTON({
                 pos: vec2(-rjs.client.w/2+280, rjs.client.h/2-60),
                 size: vec2(100, 100),
@@ -1929,6 +2026,7 @@ window.addEventListener('load', (e) => {
                     }
                 }
             });
+            // join common voice
             this.common = new QBUTTON({
                 pos: vec2(-rjs.client.w/2+390, rjs.client.h/2-60),
                 size: vec2(100, 100),
@@ -1944,14 +2042,17 @@ window.addEventListener('load', (e) => {
             });
         }
 
-        static alert (text, options = {ok () {}}, input = false) {
+        // call the pop-up window
+
+        static alert (text, options = {ok () {}}, input = false, layer = this.layer) {
 
             if(this._alert != null)
                 this._alert.close();
 
             this._alert = new WINDOW({
-                layer: this.layer,
+                layer: layer,
                 private: {
+                    // parameters of window
                     options: options,
                     input: input,
                     text: text
@@ -1962,31 +2063,40 @@ window.addEventListener('load', (e) => {
         
     }
 
+    // UI class interface
     return UI;
 
 })();
 
+	// UI initialization
 	UI.init(play_ui);
 
-	(() => {
+	// sockets script
+	SOCKET_SCRIPT = (() => {
 
+    // socket io start
     socket = io();
-
-    USERNAME = null;//"LORD"+Math.floor(Math.random()*10);//null;
+    // initializing global variables
+    USERNAME = null;
     ROOM = null;
     PASS = null;
     GAME_STARTED = false;
 
     let login = 0;
+    // 0 - not logged in
+    // 1 - logged in
+    // 2 - joined the room
     
     let vrf = false;
 
+    // generating verification code
     const code = String(Math.round(Math.random()*10000));
     socket.emit("code", code);
 
     setInterval(() => {
         if(USERNAME == null || USERNAME == "") {
             if(UI._alert == null) {
+                // username window
                 UI.alert("Enter your username:", {
                     ok (msg) {
                         tx_username.text = USERNAME = msg.input.DOM.value;
@@ -1998,6 +2108,7 @@ window.addEventListener('load', (e) => {
             UI.alert("Send code bellow to the Discord channel:\n"+code);
         else if(login == 1 && (ROOM == null || ROOM == "")) {
             if(UI._alert == null) {
+                // room title window
                 UI.alert("Enter your room name:", {
                     ok (msg) {
                         tx_room.text = ROOM = msg.input.DOM.value;
@@ -2007,6 +2118,7 @@ window.addEventListener('load', (e) => {
         }
         else if(login == 1 && (PASS == null || PASS == "")) {
             if(UI._alert == null) {
+                // room password window
                 UI.alert("Enter your room password:", {
                     ok (msg) {
                         PASS = msg.input.DOM.value;
@@ -2016,10 +2128,12 @@ window.addEventListener('load', (e) => {
         }
         else if(login == 1) {
             login = 2;
+            // joining the room
             socket.emit("join", [ROOM, PASS]);
         }
     }, 300);
 
+    // verification listener
     socket.on("verify", (name) => {
         UI.alert("Verified! Your name is\n"+name);
         vrf = true;
@@ -2033,11 +2147,13 @@ window.addEventListener('load', (e) => {
     });
 
     socket.on("map", map => {
+        // load battlemap
         MAP.load(play_scene, tiles, map);
     });
 
     socket.on("player", player => {
         
+        // the game starts
         GAME_STARTED = true;
         MAP.initPlayer(player);
 
@@ -2045,6 +2161,7 @@ window.addEventListener('load', (e) => {
 
     socket.on("army-update", army => {
 
+        // army gets created or just updates
         const a = MAP.findArmy(army);
         if(a == null)
             MAP.initArmy(army, play_armies);
@@ -2055,6 +2172,8 @@ window.addEventListener('load', (e) => {
 
     socket.on("army-delete", id => {
 
+        // army removing
+
         const a = MAP.findArmy({id:id});
 
         if(a != null) {
@@ -2064,23 +2183,24 @@ window.addEventListener('load', (e) => {
     });
 
     socket.on("update-tile", tile => {
+        // update tile (from socket)
         MAP.updateTile(tile);
     });
 
     socket.on("join-group", ({name, list, enemies, owner, token}) => {
-
+        // accepting the invitation to the group
         MAP.addGroup(name, list, enemies, owner, token);
         
     });
 
     socket.on("leave-group", token => {
-
+        // leaving the group
         MAP.removeGroup(token);
         
     });
 
     socket.on("invite-group", ({name, list, enemies, owner, token}) => {
-
+        // invite player to group
         UI.alert(`Do you want to join group "${name}"?\nMembers: ${list}\nOwner: ${owner}`, {
             no () {
                 
@@ -2093,13 +2213,14 @@ window.addEventListener('load', (e) => {
     });
 
     socket.on("update-groups", ({friends, enemies}) => {
-        
+        // update list og friends and enemies and update their tiles color
         MAP.updateGroups(friends, enemies);
 
     });
 
     socket.on("ask-for-peace", name => {
 
+        // peace offer to the player
         const res = confirm(`Player ${name} wants to make peace with you.`);
 
         if(res)
@@ -2109,7 +2230,8 @@ window.addEventListener('load', (e) => {
 
     socket.on("defeat", name => {
 
-        alert("You lost!");
+        // now the player actually is f**n looser!
+        UI.alert("You lost!");
 
         DEFEATED = true;
         GAME_STARTED = false;
@@ -2118,12 +2240,14 @@ window.addEventListener('load', (e) => {
 
     socket.on("reload", () => {
 
+        // reload the page by server command
         window.location.reload();
 
     });
 
     socket.on("voice-invite", name => {
 
+        // voice invitation
         UI.alert("Player "+name+" invites you to a conference.\nAccept?", {
             no () {
 
@@ -2138,6 +2262,7 @@ window.addEventListener('load', (e) => {
 
     socket.on("group-list", ({ list, token }) => {
 
+        // update the list of groups
         const group = MAP.groups[token];
 
         if(typeof group == "undefined")
@@ -2149,17 +2274,19 @@ window.addEventListener('load', (e) => {
 
     socket.on("voice-list", list => {
 
+        // update the list of players in current voice channel
         tx_voice_list.text = list.join("\n");
         
     });
 
 }
-)();
+);
 
 	DEFEATED = false;
 
 	tiles = {};
 
+	// text message initialization
 	tx_invite = new rjs.Text({
 		pos: vec2(0, -rjs.client.h/2+300),
 		size: 100,
@@ -2200,12 +2327,16 @@ window.addEventListener('load', (e) => {
 		layer: play_ui
 	});
 
+	// username
+
 	tx_username = new UI_TEXT({
 		pos: vec2(rjs.client.w/2-10, -rjs.client.h/2+10),
 		text: "",
 		origin: "right-top",
 		layer: play_ui
 	});
+
+	// room title
 
 	tx_room = new UI_TEXT({
 		pos: vec2(rjs.client.w/2-10, -rjs.client.h/2+10+50),
@@ -2238,6 +2369,8 @@ window.addEventListener('load', (e) => {
 	// 	layer: play_ui
 	// });
 
+	// ui indicators
+
 	tx_turns = new UI_TEXT({
 		pos: vec2(-rjs.client.w/2+10, -rjs.client.h/2+10),
 		text: "Turns: 0",
@@ -2257,6 +2390,8 @@ window.addEventListener('load', (e) => {
 		layer: play_ui
 	});
 
+	// drag and drop + zoom initialization
+
 	MAP.initDrag(scene, play_map, play_main, play_armies);
 
 	// const sp = new rjs.KeyDown(e => {
@@ -2265,9 +2400,9 @@ window.addEventListener('load', (e) => {
 	// 	socket.emit("NEW_ARMY", true);
 	// }, 32, true, scene);
 
-	const kd = new rjs.KeyDown(e => {
-		console.log(e.keyCode);
-	}, null, true, scene);
+	// const kd = new rjs.KeyDown(e => {
+	// 	console.log(e.keyCode);
+	// }, null, true, scene);
 
 	// 65 71 73
 
@@ -2347,6 +2482,8 @@ window.addEventListener('load', (e) => {
 
 	// }, 76, true, scene);
 
+	// escape button
+
 	const ic = new rjs.KeyDown(e => {
 
 		MAP.inviteGroup = null;
@@ -2356,6 +2493,8 @@ window.addEventListener('load', (e) => {
 
 	}, 27, true, scene);
 
+	// enter button
+
 	const enter = new rjs.KeyDown(e => {
 
 		if(UI._alert != null && "ok" in UI._alert.buttons)
@@ -2363,11 +2502,13 @@ window.addEventListener('load', (e) => {
 
 	}, 13, true, scene);
 
+	// click event
 	const click = new rjs.Click(e => {
 
 		if(DEFEATED)
 			return;
 
+		// UI click listener call
 		UI.click();
 
 		if(MAP.dragArmy == null) {
@@ -2376,6 +2517,7 @@ window.addEventListener('load', (e) => {
 					if(!rjs.MouseOver(tile))
 						return;
 					F_ARMIES.for(army => {
+						// drag the army
 						if(army.params.player == USERNAME && rjs.Collision(army, tile)) {
 							MAP.dragArmy = army;
 							MAP.turns --;
@@ -2387,7 +2529,7 @@ window.addEventListener('load', (e) => {
 		else {
 
 			if(MAP.select == null) {
-				// MAP.dragArmy.pos = copy(MAP.getTile(MAP.dragArmy.params.pos.x, MAP.dragArmy.params.pos.y).pos);
+				MAP.dragArmy.pos = copy(MAP.getTile(MAP.dragArmy.params.pos.x, MAP.dragArmy.params.pos.y).pos);
 				MAP.dragArmy = null;
 			}
 			else {
@@ -2412,6 +2554,8 @@ window.addEventListener('load', (e) => {
 		}
 
 	}, true, scene);
+
+	// right click event
 
 	const rclick = new rjs.RightClick(e => {
 
@@ -2463,8 +2607,7 @@ window.addEventListener('load', (e) => {
 
 	const loop = new rjs.GameLoop(() => {
 
-		// скрипт выполняется каждый раз перед отрисовкой сцены
-		// поворот спрайта вправо
+		// map game loop
 
 		MAP.loop();
 
@@ -2479,14 +2622,75 @@ window.addEventListener('load', (e) => {
 	// переключение на камеру "new_cam"
 	play_cam.set();
 
+	SOCKET_SCRIPT();
+
 }),
                 end: ((scene, params) => {
 	
-	// скрипт запускается после перехода с этой сцены на другую
-	// params - набор параметров окончания сцены
+	
 
 })
             }, 'play', []);
+	menu_scene = new rjs.Scene({
+                init: ((scene) => {
+
+	menu_cam = new rjs.Camera({});
+
+	menu_bg = new rjs.Layer(scene);
+	menu_buttons = new rjs.Layer(scene);
+	menu_text = new rjs.Layer(scene);
+
+	const login = new QBUTTON({
+		pos: vec2(0, 0),
+		size: vec2(350, 80),
+		layer: menu_buttons,
+		private: {
+			text: "Login",
+			text_color: rgb(255, 255, 255),
+			onclick () {
+				UI.alert("Username", {
+					ok (msg) {
+						const v = mag.input.DOM.value;
+						UI.alert("Password", {
+							ok (msg2) {
+								const v2 = msg.input.DOM.value;
+								// scoket.emit();
+							}
+						}, true, menu_buttons);
+					}
+				}, true, menu_buttons); 
+			}
+		}
+	});
+
+	const click = new rjs.Click(e => {
+
+		UI.click();
+
+	});
+
+	const loop = new rjs.GameLoop(() => {
+
+		
+
+	});
+
+}),
+                start: ((scene, params) => {
+	
+	// скрипт запускается после перехода на сцену
+	// params -  набор параметров запуска сцены
+	
+	// переключение на камеру "new_cam"
+	menu_cam.set();
+
+}),
+                end: ((scene, params) => {
+	
+	
+
+})
+            }, 'menu', []);
 
 	// переход на сцену "new"
 	play_scene.set();

@@ -1,28 +1,30 @@
 (scene) => {
-
-	// скрипт запускается после инициализации сцены
 	
-	// создание камеры
+	// camera initialization
 	$play_cam = new rjs.Camera({});
 
-	// создание слоёв
+	// layers
 	$play_bg = new rjs.Layer(scene);
 	$play_main = new rjs.Layer(scene);
 	$play_map = new rjs.Layer(scene);
 	$play_armies = new rjs.Layer(scene);
 	$play_ui = new rjs.Layer(scene, vec2(0, 0));
 
+	// scene scripts
 	$MAP = require("Scenes/play/Scripts/map.js")();
 	$UI = require("Scenes/play/Scripts/ui.js")();
 
+	// UI initialization
 	UI.init(play_ui);
 
-	Smart.Script("sockets.js")();
+	// sockets script
+	$SOCKET_SCRIPT = Smart.Script("sockets.js");
 
 	$DEFEATED = false;
 
 	$tiles = {};
 
+	// text message initialization
 	$tx_invite = new rjs.Text({
 		pos: vec2(0, -rjs.client.h/2+300),
 		size: 100,
@@ -63,12 +65,16 @@
 		layer: play_ui
 	});
 
+	// username
+
 	$tx_username = new UI_TEXT({
 		pos: vec2(rjs.client.w/2-10, -rjs.client.h/2+10),
 		text: "",
 		origin: "right-top",
 		layer: play_ui
 	});
+
+	// room title
 
 	$tx_room = new UI_TEXT({
 		pos: vec2(rjs.client.w/2-10, -rjs.client.h/2+10+50),
@@ -101,6 +107,8 @@
 	// 	layer: play_ui
 	// });
 
+	// ui indicators
+
 	$tx_turns = new UI_TEXT({
 		pos: vec2(-rjs.client.w/2+10, -rjs.client.h/2+10),
 		text: "Turns: 0",
@@ -120,6 +128,8 @@
 		layer: play_ui
 	});
 
+	// drag and drop + zoom initialization
+
 	MAP.initDrag(scene, play_map, play_main, play_armies);
 
 	// const sp = new rjs.KeyDown(e => {
@@ -128,9 +138,9 @@
 	// 	socket.emit("NEW_ARMY", true);
 	// }, 32, true, scene);
 
-	const kd = new rjs.KeyDown(e => {
-		console.log(e.keyCode);
-	}, null, true, scene);
+	// const kd = new rjs.KeyDown(e => {
+	// 	console.log(e.keyCode);
+	// }, null, true, scene);
 
 	// 65 71 73
 
@@ -210,6 +220,8 @@
 
 	// }, 76, true, scene);
 
+	// escape button
+
 	const ic = new rjs.KeyDown(e => {
 
 		MAP.inviteGroup = null;
@@ -219,6 +231,8 @@
 
 	}, 27, true, scene);
 
+	// enter button
+
 	const enter = new rjs.KeyDown(e => {
 
 		if(UI._alert != null && "ok" in UI._alert.buttons)
@@ -226,11 +240,13 @@
 
 	}, 13, true, scene);
 
+	// click event
 	const click = new rjs.Click(e => {
 
 		if(DEFEATED)
 			return;
 
+		// UI click listener call
 		UI.click();
 
 		if(MAP.dragArmy == null) {
@@ -239,6 +255,7 @@
 					if(!rjs.MouseOver(tile))
 						return;
 					F_ARMIES.for(army => {
+						// drag the army
 						if(army.params.player == USERNAME && rjs.Collision(army, tile)) {
 							MAP.dragArmy = army;
 							MAP.turns --;
@@ -250,7 +267,7 @@
 		else {
 
 			if(MAP.select == null) {
-				// MAP.dragArmy.pos = copy(MAP.getTile(MAP.dragArmy.params.pos.x, MAP.dragArmy.params.pos.y).pos);
+				MAP.dragArmy.pos = copy(MAP.getTile(MAP.dragArmy.params.pos.x, MAP.dragArmy.params.pos.y).pos);
 				MAP.dragArmy = null;
 			}
 			else {
@@ -275,6 +292,8 @@
 		}
 
 	}, true, scene);
+
+	// right click event
 
 	const rclick = new rjs.RightClick(e => {
 
@@ -326,8 +345,7 @@
 
 	const loop = new rjs.GameLoop(() => {
 
-		// скрипт выполняется каждый раз перед отрисовкой сцены
-		// поворот спрайта вправо
+		// map game loop
 
 		MAP.loop();
 

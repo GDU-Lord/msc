@@ -62,7 +62,7 @@ Discord.init((msg) => {
         
         if(waiting) {
             new Discord.Room("waiting", {
-                SPEAK: false,
+                SPEAK: true,
                 CONNECT: true,
                 VIEW_CHANNEL: true
             }, waiting);

@@ -1,7 +1,9 @@
 () => {
 
+    // class initialization
     class MAP {
 
+        // properties containing information about match
         static armies = {};//jshint ignore:line
         static dragArmy = null;//jshint ignore:line
         static select = null;
@@ -15,6 +17,7 @@
         static #_turns = 0;
         static interval = null;
 
+        // updating turn counter
         static get turns () {
             return this._turns;
         }
@@ -22,6 +25,7 @@
         static set turns (turns) {
             this._turns = turns;
             tx_turns.text = "Turns: "+turns;
+            // change color of inactive armies
             if(turns <= 0) {
                 F_ARMIES.for(army => {
                     if(army.params.player == USERNAME)
@@ -37,6 +41,7 @@
             }
         }
 
+        // inviting player to the group
         static get inviteGroup () {
             return this._inviteGroup;
         }
@@ -49,6 +54,7 @@
                 tx_invite.render = true;
         }
 
+        // inviting player to the voice chat
         static get inviteVoice () {
             return this._inviteVoice;
         }
@@ -58,6 +64,7 @@
             tx_voice_invite.render = inv;
         }
 
+        // kcik player from the voice chat
         static get kickVoice () {
             return this._kickVoice;
         }
@@ -67,6 +74,7 @@
             tx_voice_kick.render = kick;
         }
 
+        // kcik player from the group
         static get kickGroup () {
             return this._kickGroup;
         }
@@ -79,6 +87,7 @@
                 tx_kick.render = true;
         }
 
+        // laoding the map
         static load (scene, tiles, map) {
 
             const sz = 50;
@@ -93,6 +102,7 @@
             this.tiles = tiles;
             this.map = map;
 
+            // generating hexagonal map
             for(let i in mt) {
                 tiles[i] = {};
                 for(let j in mt[i]) {
@@ -118,6 +128,7 @@
 
         }
 
+        // return tile by position in array
         static getTile (x, y) {
             let res = null;
             F_TILES.for(tile => {
@@ -127,6 +138,7 @@
             return res;
         }
 
+        // drag and zoom plugin initialization
         static initDrag (scene, layer1, ...layers) {
             Drag.Init(scene, layer1, rjs.MouseUp, rjs.MouseDown);
             Drag.InitZoom(scene, [layer1, ...layers], 1.1, rjs.WheelUp, rjs.WheelDown, (layer, val) => {
@@ -134,6 +146,7 @@
             });
         }
 
+        // checks is the tile belong to player
         static tileBelong (tile) {
             const status = this.getStatus(tile.x, tile.y);
             return (
@@ -142,16 +155,20 @@
             );
         }
 
+        // game loop of the match
         static loop () {
 
+            // drag and zoom loop
             Drag.loop();
 
             this.select = null;
 
+            // moving the army along the mouse
             if(this.dragArmy != null) {
                 const m = Mouse.get(this.dragArmy.layer);
                 this.dragArmy.pos.x = m.x;
                 this.dragArmy.pos.y = m.y;
+                // selecting the current tile
                 F_TILES.forNearTo(Mouse, tile => {
                     if(rjs.MouseOver(tile)) {
                         let b = false;
@@ -169,16 +186,19 @@
                     }
                 }, 100);
             }
-
+            // running loop of every army
             F_ARMIES.for(army => {
                 army.loop();
             });
 
         }
 
+        // player initialization
         static initPlayer (player) {
             
+            // setting a capital
             const tile = this.getTile(player.capital.x, player.capital.y);
+            // creating player nickname on the map
             new rjs.Text({
                 pos: tile.pos,
                 size: 50,
@@ -188,15 +208,12 @@
                 layer: tile.layer
             });
             tile.filters[1] = rgb(255, 300, 255);
-            let status = "neutral";
-            if(player.name == USERNAME)
-                status = "self";
-            // this.fillTiles(player.tiles, status);
-
+            // start turn update loop
             this.startInterval();
 
         }
 
+        // fill tile with color according to the status
         static fillTiles (tiles, status) {
 
             for(let i in tiles) {
@@ -209,8 +226,10 @@
 
         }
 
+        // update tile (from socket)
         static updateTile (tile) {
 
+            // getting status of tile and setting up its color
             this.map.tiles[tile.pos.x][tile.pos.y] = tile;
 
             const obj = this.getTile(tile.pos.x, tile.pos.y);
@@ -223,10 +242,10 @@
 
         }
 
+        // create an army (from socket)
         static initArmy (army, layer) {
 
-            console.log("fkn init");
-
+            // create a game object
             const obj = this.armies[army.id] = new ARMY({
                 pos: copy(this.getTile(army.pos.x, army.pos.y).pos),
                 layer: layer,
@@ -235,11 +254,13 @@
                 }
             });
 
+            // paint army with color
             const status = this.getArmyStatus(army);
             obj.color = this.getStatusColor(status);
 
         }
 
+        // split army by 2
         static splitArmy (army) {
 
             const a = new ARMY({
@@ -258,6 +279,7 @@
 
         }
 
+        // update an army (from socket)
         static updateArmy (army, a) {
 
             a.params = army;
@@ -268,6 +290,7 @@
 
         }
 
+        // delete the army
         static deleteArmy (a) {
 
             a.remove();
@@ -275,6 +298,7 @@
 
         }
 
+        // get the army by its id
         static findArmy (army) {
 
             if(army.id in this.armies)
@@ -284,6 +308,7 @@
 
         }
 
+        // add the group (from socket)
         static addGroup (name, list, enemies, owner, token) {
 
             this.groups[token] = {
@@ -298,6 +323,7 @@
 
         }
 
+        // removing the group from list (only for client) by its token
         static removeGroup (token) {
 
             if(token in this.groups)
@@ -307,6 +333,7 @@
 
         }
 
+        // get group token by its name
         static getToken (groupName) {
 
             for(let i in this.groups) {
@@ -318,6 +345,7 @@
 
         }
 
+        // update list of groups and controll buttons
         static updateGroupList () {
 
             UI.Group.removeAll();
@@ -333,6 +361,7 @@
 
         }
 
+        // returns the status of a tile with coordinates x y
         static getStatus (x, y) {
             const tile = this.map.tiles[x][y];
             if(tile.owner == "")
@@ -346,6 +375,7 @@
             return "NEUTRAL";
         }
 
+        // returns the status of given army
         static getArmyStatus (army) {
             if(army.player == USERNAME)
                 return "OWN";
@@ -356,6 +386,7 @@
             return "NEUTRAL";
         }
 
+        // returns the color according to a given status
         static getStatusColor (status) {
 
             let res = null;
@@ -383,6 +414,7 @@
 
         }
 
+        // update colors of the tiles on battlemap according to its status
         static updateGroups (friends, enemies) {
 
             this.friends = friends;
@@ -402,6 +434,7 @@
 
         }
 
+        // start the turn loop
         static startInterval () {
 
             if(this.interval != null) {
@@ -424,6 +457,7 @@
 
     }
 
+    // script returns MAP
     return MAP;
 
 }

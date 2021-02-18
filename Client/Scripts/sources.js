@@ -1,7 +1,6 @@
 () => {
 	
-	// скрипт выполняется после инициализации движка
-	// испольуется для загрузки ресурсов
+	// loading the shaders for button textures
 
 	$FS_PLUS = new rjs.Shader("FRAGMENT", "Sources/glsl/fragment-plus.glsl", "PLUS");
 	$FS_SOUND = new rjs.Shader("FRAGMENT", "Sources/glsl/fragment-sound.glsl", "SOUND");
