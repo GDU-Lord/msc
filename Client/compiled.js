@@ -1,5 +1,5 @@
 {
-let FS_PLUS,FS_SOUND,FS_X,FS_DOTS,VS_PLUS,H_PLUS,H_PLUS2,H_SOUND,H_X,H_DOTS,TILE,UI_TEXT,ARMY,QBUTTON,KICK,JOIN,LIST,GROUP_TEXT,GROUP_BG,NEW_GROUP,WINDOW,play_cam,play_bg,play_main,play_map,play_armies,play_ui,MAP,UI,SOCKET_SCRIPT,DEFEATED,tiles,tx_invite,tx_voice_invite,tx_voice_kick,tx_kick,tx_username,tx_room,tx_pop,tx_army,tx_level,tx_coins,tx_turns,tx_groups,tx_voice_list,socket,USERNAME,ROOM,PASS,GAME_STARTED,menu_cam,menu_bg,menu_buttons,menu_text;
+let FS_PLUS,FS_SOUND,FS_X,FS_DOTS,VS_PLUS,H_PLUS,H_PLUS2,H_SOUND,H_X,H_DOTS,TILE,UI_TEXT,ARMY,QBUTTON,KICK,JOIN,LIST,GROUP_TEXT,GROUP_BG,NEW_GROUP,WINDOW,play_cam,play_bg,play_main,play_map,play_armies,play_ui,MAP,UI,DEFEATED,tiles,tx_invite,tx_voice_invite,tx_voice_kick,tx_kick,tx_username,tx_room,tx_pop,tx_army,tx_level,tx_coins,tx_turns,tx_groups,tx_voice_list,menu_cam,menu_bg,menu_buttons,menu_text,SOCKET_SCRIPT,PASSWORD,login_button,socket,USERNAME,ROOM,PASS,GAME_STARTED,ROOM_REQUEST;
 
 // код запускается после загрузки страници
 
@@ -1945,7 +1945,7 @@ window.addEventListener('load', (e) => {
 
                 F_BUTTONS.for(button => {
                     // call click event of selected button
-                    if(rjs.MouseOver(button)) {
+                    if(rjs.MouseOver(button) && button.scene == rjs.currentScene) {
                         button.onclick();
                     }
     
@@ -2070,217 +2070,6 @@ window.addEventListener('load', (e) => {
 
 	// UI initialization
 	UI.init(play_ui);
-
-	// sockets script
-	SOCKET_SCRIPT = (() => {
-
-    // socket io start
-    socket = io();
-    // initializing global variables
-    USERNAME = null;
-    ROOM = null;
-    PASS = null;
-    GAME_STARTED = false;
-
-    let login = 0;
-    // 0 - not logged in
-    // 1 - logged in
-    // 2 - joined the room
-    
-    let vrf = false;
-
-    // generating verification code
-    const code = String(Math.round(Math.random()*10000));
-    socket.emit("code", code);
-
-    setInterval(() => {
-        if(USERNAME == null || USERNAME == "") {
-            if(UI._alert == null) {
-                // username window
-                UI.alert("Enter your username:", {
-                    ok (msg) {
-                        tx_username.text = USERNAME = msg.input.DOM.value;
-                    }
-                }, true);
-            }
-        }
-        else if(!vrf)
-            UI.alert("Send code bellow to the Discord channel:\n"+code);
-        else if(login == 1 && (ROOM == null || ROOM == "")) {
-            if(UI._alert == null) {
-                // room title window
-                UI.alert("Enter your room name:", {
-                    ok (msg) {
-                        tx_room.text = ROOM = msg.input.DOM.value;
-                    }
-                }, true);
-            }
-        }
-        else if(login == 1 && (PASS == null || PASS == "")) {
-            if(UI._alert == null) {
-                // room password window
-                UI.alert("Enter your room password:", {
-                    ok (msg) {
-                        PASS = msg.input.DOM.value;
-                    }
-                }, true);
-            }
-        }
-        else if(login == 1) {
-            login = 2;
-            // joining the room
-            socket.emit("join", [ROOM, PASS]);
-        }
-    }, 300);
-
-    // verification listener
-    socket.on("verify", (name) => {
-        UI.alert("Verified! Your name is\n"+name);
-        vrf = true;
-        socket.emit("login", USERNAME);
-    });
-    
-    socket.on("login", msg => {
-        
-        login = 1;
-        
-    });
-
-    socket.on("map", map => {
-        // load battlemap
-        MAP.load(play_scene, tiles, map);
-    });
-
-    socket.on("player", player => {
-        
-        // the game starts
-        GAME_STARTED = true;
-        MAP.initPlayer(player);
-
-    });
-
-    socket.on("army-update", army => {
-
-        // army gets created or just updates
-        const a = MAP.findArmy(army);
-        if(a == null)
-            MAP.initArmy(army, play_armies);
-        else
-            MAP.updateArmy(army, a);
-
-    });
-
-    socket.on("army-delete", id => {
-
-        // army removing
-
-        const a = MAP.findArmy({id:id});
-
-        if(a != null) {
-            MAP.deleteArmy(a);
-        }
-
-    });
-
-    socket.on("update-tile", tile => {
-        // update tile (from socket)
-        MAP.updateTile(tile);
-    });
-
-    socket.on("join-group", ({name, list, enemies, owner, token}) => {
-        // accepting the invitation to the group
-        MAP.addGroup(name, list, enemies, owner, token);
-        
-    });
-
-    socket.on("leave-group", token => {
-        // leaving the group
-        MAP.removeGroup(token);
-        
-    });
-
-    socket.on("invite-group", ({name, list, enemies, owner, token}) => {
-        // invite player to group
-        UI.alert(`Do you want to join group "${name}"?\nMembers: ${list}\nOwner: ${owner}`, {
-            no () {
-                
-            },
-            ok () {
-                socket.emit("join-group", token);
-            }
-        });
-        
-    });
-
-    socket.on("update-groups", ({friends, enemies}) => {
-        // update list og friends and enemies and update their tiles color
-        MAP.updateGroups(friends, enemies);
-
-    });
-
-    socket.on("ask-for-peace", name => {
-
-        // peace offer to the player
-        const res = confirm(`Player ${name} wants to make peace with you.`);
-
-        if(res)
-            socket.emit("peace", name);
-
-    });
-
-    socket.on("defeat", name => {
-
-        // now the player actually is f**n looser!
-        UI.alert("You lost!");
-
-        DEFEATED = true;
-        GAME_STARTED = false;
-
-    });
-
-    socket.on("reload", () => {
-
-        // reload the page by server command
-        window.location.reload();
-
-    });
-
-    socket.on("voice-invite", name => {
-
-        // voice invitation
-        UI.alert("Player "+name+" invites you to a conference.\nAccept?", {
-            no () {
-
-            },
-            ok () {
-                socket.emit("voice-join", name);
-            }
-        });
-            
-
-    });
-
-    socket.on("group-list", ({ list, token }) => {
-
-        // update the list of groups
-        const group = MAP.groups[token];
-
-        if(typeof group == "undefined")
-            return;
-        
-        group.list = list;
-
-    });
-
-    socket.on("voice-list", list => {
-
-        // update the list of players in current voice channel
-        tx_voice_list.text = list.join("\n");
-        
-    });
-
-}
-);
 
 	DEFEATED = false;
 
@@ -2622,7 +2411,7 @@ window.addEventListener('load', (e) => {
 	// переключение на камеру "new_cam"
 	play_cam.set();
 
-	SOCKET_SCRIPT();
+	ROOM_REQUEST();
 
 }),
                 end: ((scene, params) => {
@@ -2640,7 +2429,260 @@ window.addEventListener('load', (e) => {
 	menu_buttons = new rjs.Layer(scene);
 	menu_text = new rjs.Layer(scene);
 
-	const login = new QBUTTON({
+	// sockets script
+	SOCKET_SCRIPT = (() => {
+
+    // socket io start
+    socket = io();
+    // initializing global variables
+    USERNAME = null;
+    ROOM = null;
+    PASS = null;
+    GAME_STARTED = false;
+
+    let login = 0;
+    // 0 - not logged in
+    // 1 - logged in
+    // 2 - joined the room
+    
+    // let vrf = false;
+
+    // // generating verification code
+    // const code = String(Math.round(Math.random()*10000));
+    // socket.emit("code", code);
+
+    ROOM_REQUEST = () => {
+        setInterval(() => {
+            if(login == 1 && (ROOM == null || ROOM == "")) {
+                if(UI._alert == null) {
+                    // room title window
+                    UI.alert("Enter your room name:", {
+                        ok (msg) {
+                            tx_room.text = ROOM = msg.input.DOM.value;
+                        }
+                    }, true);
+                }
+            }
+            else if(login == 1 && (PASS == null || PASS == "")) {
+                if(UI._alert == null) {
+                    // room password window
+                    UI.alert("Enter your room password:", {
+                        ok (msg) {
+                            PASS = msg.input.DOM.value;
+                        }
+                    }, true);
+                }
+            }
+            else if(login == 1) {
+                login = 2;
+                // joining the room
+                socket.emit("join", [ROOM, PASS]);
+            }
+        }, 300);
+    }
+
+    // // verification listener
+    // socket.on("verify", (name) => {
+    //     UI.alert("Verified! Your name is\n"+name);
+    //     vrf = true;
+    //     socket.emit("login", USERNAME);
+    // });
+    
+    // socket.on("login", msg => {
+        
+    //     login = 1;
+        
+    // });
+
+    socket.on("map", map => {
+        // load battlemap
+        MAP.load(play_scene, tiles, map);
+    });
+
+    socket.on("player", player => {
+        
+        // the game starts
+        GAME_STARTED = true;
+        MAP.initPlayer(player);
+
+    });
+
+    socket.on("army-update", army => {
+
+        // army gets created or just updates
+        const a = MAP.findArmy(army);
+        if(a == null)
+            MAP.initArmy(army, play_armies);
+        else
+            MAP.updateArmy(army, a);
+
+    });
+
+    socket.on("army-delete", id => {
+
+        // army removing
+
+        const a = MAP.findArmy({id:id});
+
+        if(a != null) {
+            MAP.deleteArmy(a);
+        }
+
+    });
+
+    socket.on("update-tile", tile => {
+        // update tile (from socket)
+        MAP.updateTile(tile);
+    });
+
+    socket.on("join-group", ({name, list, enemies, owner, token}) => {
+        // accepting the invitation to the group
+        MAP.addGroup(name, list, enemies, owner, token);
+        
+    });
+
+    socket.on("leave-group", token => {
+        // leaving the group
+        MAP.removeGroup(token);
+        
+    });
+
+    socket.on("invite-group", ({name, list, enemies, owner, token}) => {
+        // invite player to group
+        UI.alert(`Do you want to join group "${name}"?\nMembers: ${list}\nOwner: ${owner}`, {
+            no () {
+                
+            },
+            ok () {
+                socket.emit("join-group", token);
+            }
+        });
+        
+    });
+
+    socket.on("update-groups", ({friends, enemies}) => {
+        // update list og friends and enemies and update their tiles color
+        MAP.updateGroups(friends, enemies);
+
+    });
+
+    socket.on("ask-for-peace", name => {
+
+        // peace offer to the player
+        const res = confirm(`Player ${name} wants to make peace with you.`);
+
+        if(res)
+            socket.emit("peace", name);
+
+    });
+
+    socket.on("defeat", name => {
+
+        // now the player actually is f**n looser!
+        UI.alert("You lost!");
+
+        DEFEATED = true;
+        GAME_STARTED = false;
+
+    });
+
+    socket.on("reload", () => {
+
+        // reload the page by server command
+        window.location.reload();
+
+    });
+
+    socket.on("voice-invite", name => {
+
+        // voice invitation
+        UI.alert("Player "+name+" invites you to a conference.\nAccept?", {
+            no () {
+
+            },
+            ok () {
+                socket.emit("voice-join", name);
+            }
+        });
+            
+
+    });
+
+    socket.on("group-list", ({ list, token }) => {
+
+        // update the list of groups
+        const group = MAP.groups[token];
+
+        if(typeof group == "undefined")
+            return;
+        
+        group.list = list;
+
+    });
+
+    socket.on("voice-list", list => {
+
+        // update the list of players in current voice channel
+        tx_voice_list.text = list.join("\n");
+        
+    });
+
+    function verifyCode (code) {
+        UI.alert("Type the code "+code+" into a Discord channel", {
+            ok () {
+                verifyCode(code);
+            }
+        }, false, menu_buttons);
+    }
+
+    socket.on("verify-code", code => {
+
+        verifyCode(code);
+
+    });
+
+    socket.on("verify", name => {
+
+        UI.alert("Your account attached to "+name, { ok () {} }, false, menu_buttons);
+
+    });
+
+    socket.on("login", () => {
+        UI.alert("Logged in successfully! ", { ok () {} }, false, menu_buttons);
+        login = 1;
+        login_button.txt.destroy();
+        login_button = login_button.destroy();
+        localStorage.USERNAME = USERNAME;
+        localStorage.PASSWORD = PASSWORD;
+        const play = new QBUTTON({
+            pos: vec2(0, 0),
+            size: vec2(350, 80),
+            layer: menu_buttons,
+            private: {
+                text: "Play",
+                text_color: rgb(255, 255, 255),
+                onclick () {
+                    if(UI._alert == null)
+                        socket.emit("PLAY", true);
+                }
+            }
+        });
+    });
+
+    socket.on("not-in-voice", () => {
+        UI.alert("Join voice channel first!", { ok () {} }, false, menu_buttons);
+    });
+    
+    socket.on("PLAY", () => {
+        play_scene.set();
+    });
+
+}
+);
+
+	PASSWORD = null;
+
+	login_button = new QBUTTON({
 		pos: vec2(0, 0),
 		size: vec2(350, 80),
 		layer: menu_buttons,
@@ -2648,15 +2690,22 @@ window.addEventListener('load', (e) => {
 			text: "Login",
 			text_color: rgb(255, 255, 255),
 			onclick () {
+				if(UI._alert != null)
+					return;
 				UI.alert("Username", {
 					ok (msg) {
-						const v = mag.input.DOM.value;
+						const name = USERNAME = tx_username.text = msg.input.DOM.value; //jshint ignore:line
+						if(name == "")
+							return;
 						UI.alert("Password", {
 							ok (msg2) {
-								const v2 = msg.input.DOM.value;
-								// scoket.emit();
+								const pass = PASSWORD = msg2.input.DOM.value;  //jshint ignore:line
+								if(pass == "")
+									return;
+								socket.emit("LOGIN", [name, pass]);
 							}
 						}, true, menu_buttons);
+						UI._alert.input.DOM.type = "password";
 					}
 				}, true, menu_buttons); 
 			}
@@ -2684,6 +2733,13 @@ window.addEventListener('load', (e) => {
 	// переключение на камеру "new_cam"
 	menu_cam.set();
 
+	SOCKET_SCRIPT();
+
+	if("USERNAME" in localStorage && "PASSWORD" in localStorage && localStorage.USERNAME != "null" && localStorage.PASSWORD != "null") {
+		tx_username.text = USERNAME = localStorage.USERNAME;
+		PASSWORD = localStorage.PASSWORD;
+		socket.emit("LOGIN", [USERNAME, PASSWORD]);
+	}
 }),
                 end: ((scene, params) => {
 	
@@ -2693,7 +2749,7 @@ window.addEventListener('load', (e) => {
             }, 'menu', []);
 
 	// переход на сцену "new"
-	play_scene.set();
+	menu_scene.set();
 
 });
 }

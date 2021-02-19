@@ -372,6 +372,7 @@ class Room {
                 if(channel.name != "waiting") {
                     list.push(`"${channel.name}"`);
                     list.push("");
+                    console.log(channel);
                     channel.members.forEach(member => { // jshint ignore:line
     
                         list.push(member.SOCKET.PLAYER.name);

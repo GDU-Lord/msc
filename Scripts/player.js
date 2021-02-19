@@ -46,6 +46,7 @@ class Army {
         const room = Room.list[player.room];
         const tile = room.map.tiles[x][y];
         // const status = room.map.getStatus(player, x, y);
+        const tile_status = room.map.getStatus(player, x, y);
         for(let i in tile.armies) {
             const army = tile.armies[i];
             const status = army.getStatus(player);
@@ -55,7 +56,7 @@ class Army {
                 room.emit("army-update", army);
                 return army;
             }
-            else if(status == "NEUTRAL" || status == "ENEMY") {
+            else if((status == "NEUTRAL" || status == "ENEMY") && tile_status != "FRIEND") {
                 return this.fight(army, x, y);
             }
         }

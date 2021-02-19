@@ -3,6 +3,8 @@ const Path = require("path");
 const express = require("express");
 const Discord = require("./discord");
 const { type } = require("os");
+const { User } = require("discord.js");
+const GameUser = require("./user");
 
 const app = express();
 
@@ -37,13 +39,13 @@ io.on("connection", socket => {
 
     socket.on("login", (name) => {
 
-        if(name in Player.list && !Player.list[name].left)
-            return socket.emit("reload", true);
+        // if(name in Player.list && !Player.list[name].left)
+        //     return socket.emit("reload", true);
 
-        console.log(name + " -> []");
+        // console.log(name + " -> []");
 
-        socket.emit("login", true);
-        socket.PLAYER = new Player(name, socket);
+        // socket.emit("login", true);
+        // socket.PLAYER = new Player(name, socket);
 
         
     });
@@ -187,7 +189,7 @@ io.on("connection", socket => {
         if(typeof socket.PLAYER != "undefined") {
             console.log(socket.PLAYER.name + " <- [X]");
             socket.PLAYER.left = true;
-            socket.PLAYER.dsRoom.remove();
+            // socket.PLAYER.dsRoom.remove();
             const room = Room.list[socket.PLAYER.room];
             if(typeof room != "undefined")
                 room.checkUsersLeft();
@@ -301,6 +303,42 @@ io.on("connection", socket => {
             return;
         
         Discord.Room.list.waiting.connect(socket.MEMBER);
+
+    });
+
+    socket.on("LOGIN", ([username, password]) => {
+
+        const user =  GameUser.find(username);
+            
+        if(user == null) {
+
+            const code = Math.floor(Math.random()*1000);
+            socket.emit("verify-code", code);
+            socket.LOGIN = {
+                username: username,
+                password: password
+            };
+            queue[code] = socket;
+
+        }
+        else {
+
+            if(user.password == password) {
+
+                GameUser.list[user.username].login(socket);
+
+            }
+
+        }
+
+    });
+
+    socket.on("PLAY", () => {
+
+        if(typeof socket.MEMBER == "undefined" || socket.MEMBER.voice.channelID == null)
+            return socket.emit("not-in-voice", true);
+        
+        socket.emit("PLAY", true);
 
     });
 

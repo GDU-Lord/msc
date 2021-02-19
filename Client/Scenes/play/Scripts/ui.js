@@ -270,7 +270,7 @@
 
                 F_BUTTONS.for(button => {
                     // call click event of selected button
-                    if(rjs.MouseOver(button)) {
+                    if(rjs.MouseOver(button) && button.scene == rjs.currentScene) {
                         button.onclick();
                     }
     

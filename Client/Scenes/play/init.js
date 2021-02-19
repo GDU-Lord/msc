@@ -17,9 +17,6 @@
 	// UI initialization
 	UI.init(play_ui);
 
-	// sockets script
-	$SOCKET_SCRIPT = Smart.Script("sockets.js");
-
 	$DEFEATED = false;
 
 	$tiles = {};

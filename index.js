@@ -1,3 +1,4 @@
+const { User } = require("discord.js");
 const { join } = require("path");
 const { Socket } = require("socket.io");
 
@@ -23,6 +24,7 @@ count = function (obj) {
 
 };
 
+GameUser = require(__dirname + "/Scripts/user.js");
 Group = require(__dirname + "/Scripts/group.js");
 ROOM = Room = require(__dirname + "/Scripts/room.js");
 Player = require(__dirname + "/Scripts/player.js");
@@ -128,10 +130,14 @@ Discord.init((msg) => {
             const name = msg.member.user.username;
             const id = msg.member.user.id;
             
-            msg.member.SOCKET = queue[msg.content.trim()];
+            const socket = msg.member.SOCKET = queue[msg.content.trim()];
             queue[msg.content.trim()].emit("verify", name);
             queue[msg.content.trim()].MEMBER = msg.member;
             delete queue[msg.content.trim()];
+
+            const user = new GameUser(socket.LOGIN.username, msg.member.id, socket.LOGIN.password);
+
+            user._login = socket;
 
             return msg.channel.send(`${msg.member} verified successfully!`);
 

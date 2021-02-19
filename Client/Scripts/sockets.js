@@ -13,64 +13,54 @@
     // 1 - logged in
     // 2 - joined the room
     
-    let vrf = false;
+    // let vrf = false;
 
-    // generating verification code
-    const code = String(Math.round(Math.random()*10000));
-    socket.emit("code", code);
+    // // generating verification code
+    // const code = String(Math.round(Math.random()*10000));
+    // socket.emit("code", code);
 
-    setInterval(() => {
-        if(USERNAME == null || USERNAME == "") {
-            if(UI._alert == null) {
-                // username window
-                UI.alert("Enter your username:", {
-                    ok (msg) {
-                        tx_username.text = USERNAME = msg.input.DOM.value;
-                    }
-                }, true);
+    $ROOM_REQUEST = () => {
+        setInterval(() => {
+            if(login == 1 && (ROOM == null || ROOM == "")) {
+                if(UI._alert == null) {
+                    // room title window
+                    UI.alert("Enter your room name:", {
+                        ok (msg) {
+                            tx_room.text = ROOM = msg.input.DOM.value;
+                        }
+                    }, true);
+                }
             }
-        }
-        else if(!vrf)
-            UI.alert("Send code bellow to the Discord channel:\n"+code);
-        else if(login == 1 && (ROOM == null || ROOM == "")) {
-            if(UI._alert == null) {
-                // room title window
-                UI.alert("Enter your room name:", {
-                    ok (msg) {
-                        tx_room.text = ROOM = msg.input.DOM.value;
-                    }
-                }, true);
+            else if(login == 1 && (PASS == null || PASS == "")) {
+                if(UI._alert == null) {
+                    // room password window
+                    UI.alert("Enter your room password:", {
+                        ok (msg) {
+                            PASS = msg.input.DOM.value;
+                        }
+                    }, true);
+                }
             }
-        }
-        else if(login == 1 && (PASS == null || PASS == "")) {
-            if(UI._alert == null) {
-                // room password window
-                UI.alert("Enter your room password:", {
-                    ok (msg) {
-                        PASS = msg.input.DOM.value;
-                    }
-                }, true);
+            else if(login == 1) {
+                login = 2;
+                // joining the room
+                socket.emit("join", [ROOM, PASS]);
             }
-        }
-        else if(login == 1) {
-            login = 2;
-            // joining the room
-            socket.emit("join", [ROOM, PASS]);
-        }
-    }, 300);
+        }, 300);
+    }
 
-    // verification listener
-    socket.on("verify", (name) => {
-        UI.alert("Verified! Your name is\n"+name);
-        vrf = true;
-        socket.emit("login", USERNAME);
-    });
+    // // verification listener
+    // socket.on("verify", (name) => {
+    //     UI.alert("Verified! Your name is\n"+name);
+    //     vrf = true;
+    //     socket.emit("login", USERNAME);
+    // });
     
-    socket.on("login", msg => {
+    // socket.on("login", msg => {
         
-        login = 1;
+    //     login = 1;
         
-    });
+    // });
 
     socket.on("map", map => {
         // load battlemap
@@ -203,6 +193,56 @@
         // update the list of players in current voice channel
         tx_voice_list.text = list.join("\n");
         
+    });
+
+    function verifyCode (code) {
+        UI.alert("Type the code "+code+" into a Discord channel", {
+            ok () {
+                verifyCode(code);
+            }
+        }, false, menu_buttons);
+    }
+
+    socket.on("verify-code", code => {
+
+        verifyCode(code);
+
+    });
+
+    socket.on("verify", name => {
+
+        UI.alert("Your account attached to "+name, { ok () {} }, false, menu_buttons);
+
+    });
+
+    socket.on("login", () => {
+        UI.alert("Logged in successfully! ", { ok () {} }, false, menu_buttons);
+        login = 1;
+        login_button.txt.destroy();
+        login_button = login_button.destroy();
+        localStorage.USERNAME = USERNAME;
+        localStorage.PASSWORD = PASSWORD;
+        const play = new QBUTTON({
+            pos: vec2(0, 0),
+            size: vec2(350, 80),
+            layer: menu_buttons,
+            private: {
+                text: "Play",
+                text_color: rgb(255, 255, 255),
+                onclick () {
+                    if(UI._alert == null)
+                        socket.emit("PLAY", true);
+                }
+            }
+        });
+    });
+
+    socket.on("not-in-voice", () => {
+        UI.alert("Join voice channel first!", { ok () {} }, false, menu_buttons);
+    });
+    
+    socket.on("PLAY", () => {
+        play_scene.set();
     });
 
 }

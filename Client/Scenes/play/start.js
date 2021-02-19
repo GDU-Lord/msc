@@ -6,6 +6,6 @@
 	// переключение на камеру "new_cam"
 	play_cam.set();
 
-	SOCKET_SCRIPT();
+	ROOM_REQUEST();
 
 }
