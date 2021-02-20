@@ -1,5 +1,5 @@
 {
-let FS_PLUS,FS_SOUND,FS_X,FS_DOTS,VS_PLUS,H_PLUS,H_PLUS2,H_SOUND,H_X,H_DOTS,TILE,UI_TEXT,ARMY,QBUTTON,KICK,JOIN,LIST,GROUP_TEXT,GROUP_BG,NEW_GROUP,WINDOW,play_cam,play_bg,play_main,play_map,play_armies,play_ui,MAP,UI,DEFEATED,tiles,tx_invite,tx_voice_invite,tx_voice_kick,tx_kick,tx_username,tx_room,tx_pop,tx_army,tx_level,tx_coins,tx_turns,tx_groups,tx_voice_list,menu_cam,menu_bg,menu_buttons,menu_text,SOCKET_SCRIPT,PASSWORD,login_button,socket,USERNAME,ROOM,PASS,GAME_STARTED,ROOM_REQUEST;
+let FS_PLUS,FS_SOUND,FS_X,FS_DOTS,VS_PLUS,FS_NOISE,H_DEF,H_PLUS,H_PLUS2,H_SOUND,H_X,H_DOTS,TILE,UI_TEXT,ARMY,QBUTTON,KICK,JOIN,LIST,GROUP_TEXT,GROUP_BG,NEW_GROUP,WINDOW,play_cam,play_bg,play_main,play_map,play_armies,play_ui,MAP,UI,DEFEATED,tiles,tx_invite,tx_voice_invite,tx_voice_kick,tx_kick,tx_username,tx_room,tx_pop,tx_army,tx_level,tx_coins,tx_turns,tx_groups,tx_voice_list,menu_cam,menu_text,menu_bg,menu_buttons,SOCKET_SCRIPT,PASSWORD,login_button,discord_button,socket,USERNAME,ROOM,PASS,GAME_STARTED,ROOM_REQUEST;
 
 // код запускается после загрузки страници
 
@@ -844,6 +844,14 @@ window.addEventListener('load', (e) => {
 	FS_DOTS = new rjs.Shader("FRAGMENT", "Sources/glsl/fragment-dots.glsl", "DOTS");
 	VS_PLUS = new rjs.Shader("VERTEX", "Sources/glsl/vertex-plus.glsl", "PLUS2");
 
+	FS_NOISE = new rjs.Shader("FRAGMENT", "Sources/glsl/fragment-noise.glsl", "DEFAULT2");
+
+	H_DEF = new rjs.Program({
+		fragment: FS_NOISE,
+		vertex: "DEFAULT",
+		id: "DEFAULT"
+	});
+
 	H_PLUS = new rjs.Program({
 		fragment: FS_PLUS,
 		vertex: "DEFAULT",
@@ -1084,6 +1092,7 @@ window.addEventListener('load', (e) => {
 		size: vec2(400, 300),
 		pos: vec2(0, -rjs.client.h/2+200),
 		color: rgba(200, 200, 200, 200),
+		textOverlap: true,
 		points: [
 			vec2(0, -40),
 			vec2(0, 30),
@@ -1240,9 +1249,10 @@ window.addEventListener('load', (e) => {
             // change color of inactive armies
             if(turns <= 0) {
                 F_ARMIES.for(army => {
-                    if(army.params.player == USERNAME)
-                        army.opacity = 50;
-                        army.filters[10] = rgb(255, 200, 255);
+                    if(this.getArmyStatus(army.params) == "OWN") {
+                        army.opacity = 100;
+                        army.filters[10] = rgb(200, 200, 0);
+                    }
                 });
             }
             else {
@@ -1419,7 +1429,7 @@ window.addEventListener('load', (e) => {
                 color: rgba(0, 0, 0, 180),
                 layer: tile.layer
             });
-            tile.filters[1] = rgb(255, 300, 255);
+            tile.filters[1] = rgb(200, 200, 300);
             // start turn update loop
             this.startInterval();
 
@@ -1940,7 +1950,7 @@ window.addEventListener('load', (e) => {
             }
             else {
 
-                if(DEFEATED)
+                if(DEFEATED && (this._alert == null || this._alert.text != "Defeat!"))
                     return;
 
                 F_BUTTONS.for(button => {
@@ -2425,9 +2435,9 @@ window.addEventListener('load', (e) => {
 
 	menu_cam = new rjs.Camera({});
 
+	menu_text = new rjs.Layer(scene);
 	menu_bg = new rjs.Layer(scene);
 	menu_buttons = new rjs.Layer(scene);
-	menu_text = new rjs.Layer(scene);
 
 	// sockets script
 	SOCKET_SCRIPT = (() => {
@@ -2579,7 +2589,7 @@ window.addEventListener('load', (e) => {
     socket.on("defeat", name => {
 
         // now the player actually is f**n looser!
-        UI.alert("You lost!");
+        UI.alert("Defeat!");
 
         DEFEATED = true;
         GAME_STARTED = false;
@@ -2692,6 +2702,11 @@ window.addEventListener('load', (e) => {
 			onclick () {
 				if(UI._alert != null)
 					return;
+				if("USERNAME" in localStorage && "PASSWORD" in localStorage && localStorage.USERNAME != "null" && localStorage.PASSWORD != "null") {
+					tx_username.text = USERNAME = localStorage.USERNAME;
+					PASSWORD = localStorage.PASSWORD;
+					return socket.emit("LOGIN", [USERNAME, PASSWORD]);
+				}
 				UI.alert("Username", {
 					ok (msg) {
 						const name = USERNAME = tx_username.text = msg.input.DOM.value; //jshint ignore:line
@@ -2712,6 +2727,58 @@ window.addEventListener('load', (e) => {
 		}
 	});
 
+	discord_button = new QBUTTON({
+		pos: vec2(0, 100),
+		size: vec2(350, 80),
+		layer: menu_buttons,
+		private: {
+			text: "Discord",
+			text_color: rgb(255, 255, 255),
+			onclick () {
+				if(UI._alert != null)
+					return;
+				window.open("https://discord.gg/HScPM7KfWj");
+			}
+		}
+	});
+
+	new rjs.Sprite({
+		pos: vec2(),
+		size: vec2(rjs.client.w, rjs.client.h),
+		color: rgb(100, 120, 50),
+		opacity: 150,
+		layer: menu_bg
+	});
+
+	new rjs.Text({
+		pos: vec2(-rjs.client.w/2+10, rjs.client.h/2-10),
+		size: 30,
+		font: "Arial",
+		color: rgb(50, 50, 150),
+		text: "Lord ØST © 2021",
+		origin: "left-bottom",
+		layer: menu_text
+	});
+
+	new rjs.Text({
+		pos: vec2(rjs.client.w/2-10, rjs.client.h/2-10),
+		size: 30,
+		font: "Arial",
+		color: rgb(50, 50, 150),
+		text: "Beta-v1.1\n[Brackeys GameJam 2020-1]",
+		origin: "right-bottom",
+		layer: menu_text
+	});
+
+	const title = new rjs.Text({
+		pos: vec2(0, -200),
+		size: 100,
+		color: rgb(255, 0, 0),
+		font: "Arial",
+		text: "MisConflict",
+		layer: menu_text
+	});
+
 	const click = new rjs.Click(e => {
 
 		UI.click();
@@ -2720,7 +2787,8 @@ window.addEventListener('load', (e) => {
 
 	const loop = new rjs.GameLoop(() => {
 
-		
+		// title.pos.x = Mouse.x;
+		// title.pos.y = Mouse.y;
 
 	});
 

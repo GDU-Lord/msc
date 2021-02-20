@@ -1,9 +1,0 @@
-{
-	"name": "smart",
-	"version": "1.0.0",
-	"main": "plugin.js",
-	"compiled": "compiled.js",
-	"settings": {
-
-	}
-}

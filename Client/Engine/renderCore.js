@@ -379,7 +379,7 @@
             ctx.save();
 
             const px = rjs.client.w/2-rjs.currentCamera.pos.x * o.layer.parallax.x / 100-o.pos.x;
-            const py = rjs.client.h/2-rjs.currentCamera.pos.y * o.layer.parallax.y / 100-o.pos.y;
+            const py = rjs.client.h/2-rjs.currentCamera.pos.y * o.layer.parallax.y / 100+o.pos.y;
             
             ctx.scale(o.layer.scale.x*prop, o.layer.scale.y*prop);
             ctx.translate(px, py);

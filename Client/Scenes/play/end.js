@@ -1,5 +1,0 @@
-(scene, params) => {
-	
-	
-
-}

@@ -105,7 +105,7 @@ class Room {
 
     static Map = Map; //jshint ignore:line
     static list = {};
-    static MAX_PLAYERS = 2;
+    static MAX_PLAYERS = 4;
 
     players = {};
     map = {};
@@ -158,9 +158,10 @@ class Room {
         if(status == "NEUTRAL" || status == "ENEMY") {
             tile.owner = player.name;
             this.emit("update-tile", tile);
-            if(army != null)
+            if(army != null) {
                 army.amount --;
-            rem = army.amount <= 0;
+                rem = army.amount <= 0;
+            }
             if(`${tile.pos.x}_${tile.pos.y}` in this.capitals) {
                 delete this.capitals[`${tile.pos.x}_${tile.pos.y}`];
                 owner.defeat(player);
@@ -272,7 +273,7 @@ class Room {
 
     join (player, password) {
 
-        if(this.started ||password != this.password)
+        if(this.started || password != this.password)
             return player.socket.emit("reload", true);
         
         this.players[player.name] = player;

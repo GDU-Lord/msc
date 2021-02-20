@@ -52,7 +52,7 @@ Discord.init((msg) => {
         const channel_list = [];
 
         channels.forEach(channel => {
-            if(channel.name == "common")
+            if(channel.name == "bot" || channel.name == "welcome" || channel.name == "open-voice" || channel.name == "guide")
                 return;
             if(channel.name == "waiting") {
                 waiting = true;
