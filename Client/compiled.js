@@ -589,6 +589,10 @@ window.addEventListener('load', (e) => {
 	ex.startPoint = vec2(null, null);
 	ex.startCam = vec2(null, null);
 	ex.AutoLoop = sets.autoloop;
+	ex.min_scroll = 0.1;
+	ex.max_scroll = 10;
+	ex.v_borders = vec2(-1000, 1000);
+	ex.h_borders = vec2(-1000, 1000);
 
 	ex.Init = function (scene, layer, mouseUpEvent = rjs.MouseUp, mouseDownEvent = rjs.MouseDown) {
 		scene.DragEnabled = true;
@@ -608,10 +612,14 @@ window.addEventListener('load', (e) => {
 		}, true, scene);
 	};
 
-	ex.InitZoom = function (scene, layers = [], step = 1.1, scrollUpEvent = rjs.WheelUp, scrollDownEvent = rjs.WheelDown, fnc = ex.Zoom) {
+	ex.InitZoom = function (scene, layers = [], step = 1.1, scrollUpEvent = rjs.WheelUp, scrollDownEvent = rjs.WheelDown, fnc = ex.Zoom, min_scroll = ex.min_scroll, max_scroll = ex.max_scroll, v_borders = ex.v_borders, h_borders = ex.h_borders) {
 		scene.DragZoom = true;
 		scene.DragZoomLayers = layers;
 		scene.DragZoomStep = step;
+		scene.DragZoomMinScroll = min_scroll;
+		scene.DragZoomMaxScroll = max_scroll;
+		scene.DragZoomVBorders = v_borders;
+		scene.DragZoomHBorders = h_borders;
 		scene.DragZoomScrollUpEvent = new scrollUpEvent(e => {
 			rjs.currentScene.DragZoomTarget /= rjs.currentScene.DragZoomStep;
 		}, true, scene);
@@ -657,11 +665,31 @@ window.addEventListener('load', (e) => {
 			let delta = vec2(m.x-p.x, m.y-p.y);
 			rjs.currentCamera.pos.x = c.x-delta.x;
 			rjs.currentCamera.pos.y = c.y-delta.y;
+			if(rjs.currentCamera.pos.x < scene.DragZoomHBorders.x) {
+				p.x -= rjs.currentCamera.pos.x-scene.DragZoomHBorders.x;
+				rjs.currentCamera.pos.x = scene.DragZoomHBorders.x;
+			}
+			if(rjs.currentCamera.pos.x > scene.DragZoomHBorders.y) {
+				p.x -= rjs.currentCamera.pos.x-scene.DragZoomHBorders.y;
+				rjs.currentCamera.pos.x = scene.DragZoomHBorders.y;
+			}
+			if(rjs.currentCamera.pos.y < scene.DragZoomVBorders.x) {
+				p.y -= rjs.currentCamera.pos.y-scene.DragZoomHBorders.x;
+				rjs.currentCamera.pos.y = scene.DragZoomVBorders.x;
+			}
+			if(rjs.currentCamera.pos.y > scene.DragZoomVBorders.y) {
+				p.y -= rjs.currentCamera.pos.y-scene.DragZoomHBorders.y;
+				rjs.currentCamera.pos.y = scene.DragZoomVBorders.y;
+			}
 		}
 		if(scene != null && scene.DragZoom) {
 			let layers = scene.DragZoomLayers;
 			for(let i in layers) {
 				let layer = layers[i];
+				if(scene.DragZoomTarget > scene.DragZoomMaxScroll)
+					scene.DragZoomTarget = scene.DragZoomMaxScroll;
+				if(scene.DragZoomTarget < scene.DragZoomMinScroll)
+					scene.DragZoomTarget = scene.DragZoomMinScroll;
 				if(layer.scale.x != scene.DragZoomTarget || layer.scale.y != scene.DragZoomTarget) {
 					scene.DragZoomFunction(layer, scene.DragZoomTarget);
 				}
@@ -1005,6 +1033,7 @@ window.addEventListener('load', (e) => {
 		size: vec2(50, 50),
 		color: rgb(100, 100, 100),
 		families: [F_BUTTONS],
+		textOverlap: true,
 		private: {
 			text: null,
 			text_color: rgb(0, 0, 0),
@@ -1070,6 +1099,7 @@ window.addEventListener('load', (e) => {
 		size: vec2(300+10*4, 100+10*2),
 		color: rgb(200, 200, 200),
 		opacity: 50,
+		textOverlap: true,
 		origin: vec2((300+10*4)/2, (100+10*2)/2)
 	});
 
@@ -1080,6 +1110,7 @@ window.addEventListener('load', (e) => {
 		families: [F_BUTTONS],
 		origin: vec2((300+10*4)/2, (50)/2),
 		program: H_PLUS2,
+		textOverlap: true,
 		private: {
 			onclick () {}
 		}
@@ -1089,7 +1120,7 @@ window.addEventListener('load', (e) => {
 
 	WINDOW = new rjs.Asset({
 		type: "Sprite",
-		size: vec2(400, 300),
+		size: vec2(500, 300),
 		pos: vec2(0, -rjs.client.h/2+200),
 		color: rgba(200, 200, 200, 200),
 		textOverlap: true,
@@ -1365,7 +1396,7 @@ window.addEventListener('load', (e) => {
             Drag.Init(scene, layer1, rjs.MouseUp, rjs.MouseDown);
             Drag.InitZoom(scene, [layer1, ...layers], 1.1, rjs.WheelUp, rjs.WheelDown, (layer, val) => {
                 Fade.SetTarget(layer, ['scale.x', 'scale.y'], [val, val], 0.2);
-            });
+            }, 0.4, 5, vec2(-800, 800), vec2(-800, 800));
         }
 
         // checks is the tile belong to player
@@ -2666,7 +2697,7 @@ window.addEventListener('load', (e) => {
         localStorage.PASSWORD = PASSWORD;
         const play = new QBUTTON({
             pos: vec2(0, 0),
-            size: vec2(350, 80),
+            size: vec2(500, 80),
             layer: menu_buttons,
             private: {
                 text: "Play",
@@ -2674,6 +2705,22 @@ window.addEventListener('load', (e) => {
                 onclick () {
                     if(UI._alert == null)
                         socket.emit("PLAY", true);
+                }
+            }
+        });
+        const logout = new QBUTTON({
+            pos: vec2(0, 200),
+            size: vec2(500, 80),
+            layer: menu_buttons,
+            private: {
+                text: "Sign out",
+                text_color: rgb(255, 255, 255),
+                onclick () {
+                    try {
+                        delete localStorage.USERNAME;
+                        delete localStorage.PASSWORD;
+                    } catch (err) {}
+                    window.location.reload();
                 }
             }
         });
@@ -2687,6 +2734,28 @@ window.addEventListener('load', (e) => {
         play_scene.set();
     });
 
+    function callRoomMaxPlayers (password) {
+        UI.alert("Set amount of players (2-10):", {
+            ok (msg) {
+                const str = msg.input.DOM.value;
+                const flt = parseFloat(str);
+                if(flt.toString() == "NaN")
+                    return callRoomMaxPlayers(password);
+                if(flt > 10)
+                    return callRoomMaxPlayers(password);
+                if(flt < 2)
+                    return callRoomMaxPlayers(password);
+                socket.emit("room-max-players", [flt, password]);
+            }
+        }, true);
+    }
+
+    socket.on("room-max-players", (password) => {
+
+        callRoomMaxPlayers(password);
+
+    });
+
 }
 );
 
@@ -2694,7 +2763,7 @@ window.addEventListener('load', (e) => {
 
 	login_button = new QBUTTON({
 		pos: vec2(0, 0),
-		size: vec2(350, 80),
+		size: vec2(500, 80),
 		layer: menu_buttons,
 		private: {
 			text: "Login",
@@ -2729,10 +2798,10 @@ window.addEventListener('load', (e) => {
 
 	discord_button = new QBUTTON({
 		pos: vec2(0, 100),
-		size: vec2(350, 80),
+		size: vec2(500, 80),
 		layer: menu_buttons,
 		private: {
-			text: "Discord",
+			text: "Join our Discord",
 			text_color: rgb(255, 255, 255),
 			onclick () {
 				if(UI._alert != null)

@@ -97,12 +97,10 @@ class GameUser {
             
             const login = this._login;
             this._login = null;
-            console.log(this);
 
             if(res == null) {
 
                 users.insertOne(this, () => {
-                    console.log("Success!");
                     if(login != null)
                         this.login(login);
                 });

@@ -86,7 +86,6 @@ Discord.init((msg) => {
                         VIEW_CHANNEL: true
                     }, waiting);
                 }
-                new Discord.Room("common-voice", {});
             }, 1000);
         }, 1000);
 

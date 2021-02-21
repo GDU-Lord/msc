@@ -16,6 +16,10 @@ app.get("/", (req, res) => {
     res.sendFile(DIRNAME + "/Client/index.html");
 });
 
+app.get("/favicon.ico", (req, res) => {
+    res.sendFile(DIRNAME + "/Client/Sources/images/icon.ico");
+});
+
 http.listen(9909, "31.131.22.158", () => {
     console.log('Initialization completed! Server is running...');
 });
@@ -143,7 +147,6 @@ io.on("connection", socket => {
         const group = room.groups[token];
         if(typeof group == "undefined")
             return;
-        console.log(group);
         if(socket.PLAYER.name == group.owner)
             group.leave(player.name);
 
@@ -283,12 +286,17 @@ io.on("connection", socket => {
         if(socket.MEMBER == "undefined")
             return;
 
-        Discord.Room.list["common-voice"].connect(socket.MEMBER);
-
         const player = socket.PLAYER;
 
         if(typeof player == "undefined")
             return;
+
+        const room = Room.list[player.room];
+
+        if(typeof room == "undefined")
+            return;
+
+        room.dsRoom.connect(socket.MEMBER);
 
     });
 
@@ -339,6 +347,27 @@ io.on("connection", socket => {
             return socket.emit("not-in-voice", true);
         
         socket.emit("PLAY", true);
+
+    });
+
+    socket.on("room-max-players", ([n, password]) => {
+
+        if(socket.MEMBER == "undefined")
+            return;
+
+        const player = socket.PLAYER;
+
+        if(typeof player == "undefined")
+            return;
+
+        const room = Room.list[player.room];
+
+        if(typeof room == "undefined")
+            return;
+
+        if(room.password == password) {
+            room.MAX_PLAYERS = parseFloat(n) || 2;
+        }
 
     });
 

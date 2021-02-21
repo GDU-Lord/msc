@@ -135,6 +135,7 @@ class Room {
         this.map = new Map(20, 20);
         this.MAX_PLAYERS = this.constructor.MAX_PLAYERS;
         this.constructor.list[this.name] = this;
+        this.dsRoom = new Discord.Room(this.name+"-common-voice");
 
         console.log("+ "+this.name);
 
@@ -279,8 +280,14 @@ class Room {
         this.players[player.name] = player;
         
         player.socket.emit("map", this.map);
+        
+        player.room = this.name;
 
-        if(count(this.players) == this.MAX_PLAYERS) {
+        if(count(this.players) == 1) {
+
+            player.socket.emit("room-max-players", password);
+
+        } else if(count(this.players) >= this.MAX_PLAYERS) {
             for(let i in this.players) {
                 this.start(this.players[i]);
             }
@@ -348,7 +355,7 @@ class Room {
 
         }
 
-        if(cnt < 2) {
+        if((this.started && cnt < 2) || (!this.started && cnt < 1)) {
             this.close();
         }
 
@@ -373,7 +380,6 @@ class Room {
                 if(channel.name != "waiting") {
                     list.push(`"${channel.name}"`);
                     list.push("");
-                    console.log(channel);
                     channel.members.forEach(member => { // jshint ignore:line
     
                         list.push(member.SOCKET.PLAYER.name);
@@ -392,6 +398,7 @@ class Room {
     close () {
 
         this.emit("reload");
+        this.dsRoom.remove();
         delete this.constructor.list[this.name];
 
     }
